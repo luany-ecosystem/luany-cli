@@ -23,28 +23,11 @@ class WelcomeMessage
 
     private static function resolveVersion(): string
     {
-        $candidates = [
-            __DIR__ . '/../../composer.json',             // local dev installation
-            __DIR__ . '/../../../luany/cli/composer.json', // global Composer installation
-        ];
-
-        foreach ($candidates as $file) {
-            if (file_exists($file)) {
-                $data = json_decode(file_get_contents($file), true);
-                if (!empty($data['version'])) {
-                    return $data['version'];
-                }
-            }
-        }
-
-        // Fallback: read version from global composer.lock
-        $lock = __DIR__ . '/../../../composer.lock';
-        if (file_exists($lock)) {
-            $data = json_decode(file_get_contents($lock), true);
-            foreach ($data['packages'] ?? [] as $pkg) {
-                if ($pkg['name'] === 'luany/cli') {
-                    return $pkg['version'];
-                }
+        if (class_exists(\Composer\InstalledVersions::class)) {
+            $version = \Composer\InstalledVersions::getPrettyVersion('luany/cli');
+            if ($version !== null) {
+                // Strip dev suffixes like "+no-version-set"
+                return preg_replace('/\+.+$/', '', $version);
             }
         }
 
