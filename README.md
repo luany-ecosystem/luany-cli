@@ -9,17 +9,22 @@
 composer global require luany/cli
 ```
 
-Ensure `~/.composer/vendor/bin` is in your `PATH`, then use from any project:
+Ensure Composer's global bin directory is in your `PATH`:
+
+**macOS / Linux:**
+```bash
+export PATH="$PATH:$HOME/.composer/vendor/bin"
+```
+
+**Windows:**
+```
+%USERPROFILE%\AppData\Roaming\Composer\vendor\bin
+```
+
+Then use from any Luany project:
 ```bash
 luany make:controller Home
 luany serve
-```
-
-### Per project
-
-The CLI is included automatically when you create a project via:
-```bash
-composer create-project luany/luany my-project
 ```
 
 ## Usage

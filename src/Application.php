@@ -17,6 +17,7 @@ use LuanyCli\Commands\MigrateFreshCommand;
 use LuanyCli\Commands\MigrateRollbackCommand;
 use LuanyCli\Commands\MigrateStatusCommand;
 use LuanyCli\Commands\ServeCommand;
+use LuanyCli\WelcomeMessage;
 
 class Application
 {
@@ -30,6 +31,7 @@ class Application
         $args        = array_slice($argv, 2);
 
         if (!$commandName || $commandName === '--help' || $commandName === '-h') {
+            WelcomeMessage::print();
             $registry->get('list')->handle([]);
             exit(0);
         }

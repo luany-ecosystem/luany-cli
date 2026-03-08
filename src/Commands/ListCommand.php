@@ -21,8 +21,7 @@ class ListCommand implements CommandInterface
 
     public function handle(array $args): void
     {
-        echo "\n  \033[33mLuany CLI\033[0m — Compiler-grade PHP MVC\n\n";
-        echo "  \033[32mUsage:\033[0m   luany <command> [arguments]\n\n";
+        echo "\n  \033[32mUsage:\033[0m   luany <command> [arguments]\n\n";
         echo "  \033[32mCommands:\033[0m\n";
 
         $commands = $this->registry->all();
