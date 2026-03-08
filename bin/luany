@@ -2,9 +2,14 @@
 <?php
 
 define('LUANY_CLI', true);
-define('BASE_DIR', realpath(getcwd()));
 
-$autoload = BASE_DIR . '/vendor/autoload.php';
+// Instalação global via Composer: vendor/luany/cli/bin/ → vendor/autoload.php
+$autoload = __DIR__ . '/../../../autoload.php';
+
+// Fallback para desenvolvimento local
+if (!file_exists($autoload)) {
+    $autoload = __DIR__ . '/../vendor/autoload.php';
+}
 
 if (!file_exists($autoload)) {
     fwrite(STDERR, "\n  \033[31m✗\033[0m  vendor/autoload.php not found. Run: composer install\n\n");
@@ -12,5 +17,7 @@ if (!file_exists($autoload)) {
 }
 
 require $autoload;
+
+define('BASE_DIR', LuanyCli\Support\ProjectFinder::findRoot());
 
 LuanyCli\Application::run($argv);
