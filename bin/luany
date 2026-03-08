@@ -1,0 +1,16 @@
+#!/usr/bin/env php
+<?php
+
+define('LUANY_CLI', true);
+define('BASE_DIR', realpath(getcwd()));
+
+$autoload = BASE_DIR . '/vendor/autoload.php';
+
+if (!file_exists($autoload)) {
+    fwrite(STDERR, "\n  \033[31m✗\033[0m  vendor/autoload.php not found. Run: composer install\n\n");
+    exit(1);
+}
+
+require $autoload;
+
+LuanyCli\Application::run($argv);
