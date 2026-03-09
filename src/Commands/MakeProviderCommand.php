@@ -1,9 +1,9 @@
 <?php
 
 namespace LuanyCli\Commands;
-use LuanyCli\Env;
 
 use LuanyCli\CommandInterface;
+use LuanyCli\Env;
 
 class MakeProviderCommand implements CommandInterface
 {

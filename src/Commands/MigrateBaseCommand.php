@@ -8,13 +8,26 @@ use LuanyCli\Env;
 /**
  * MigrateBaseCommand
  *
- * Shared PDO bootstrap for migration commands.
- * Reads DB credentials directly from .env via parse_ini_file —
- * intentionally avoids the framework bootstrap so the CLI
- * remains usable before the app is fully configured.
+ * Shared bootstrap for all migration commands. Reads DB credentials
+ * directly from .env — intentionally avoids the framework bootstrap
+ * so the CLI remains usable before the app is fully configured.
  */
 abstract class MigrateBaseCommand implements CommandInterface
 {
+    /**
+     * Load the project's vendor/autoload.php so framework classes
+     * (e.g. MigrationRunner) are available when the CLI is installed
+     * globally and the project has its own vendor/ directory.
+     */
+    protected function loadProjectAutoload(): void
+    {
+        $autoload = Env::basePath() . '/vendor/autoload.php';
+
+        if (file_exists($autoload)) {
+            require_once $autoload;
+        }
+    }
+
     protected function pdo(): \PDO
     {
         $env = $this->loadEnv();
@@ -32,6 +45,10 @@ abstract class MigrateBaseCommand implements CommandInterface
         ]);
     }
 
+    /**
+     * Parse .env manually — parse_ini_file() chokes on values that
+     * contain '=' (e.g. base64 APP_KEY) or '(' characters.
+     */
     protected function loadEnv(): array
     {
         $file = Env::basePath() . '/.env';
@@ -41,7 +58,35 @@ abstract class MigrateBaseCommand implements CommandInterface
             exit(1);
         }
 
-        return parse_ini_file($file) ?: [];
+        $result = [];
+        $lines  = file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+
+        foreach ($lines as $line) {
+            $line = trim($line);
+
+            if (str_starts_with($line, '#') || !str_contains($line, '=')) {
+                continue;
+            }
+
+            $pos   = strpos($line, '=');
+            $key   = trim(substr($line, 0, $pos));
+            $value = trim(substr($line, $pos + 1));
+
+            // Strip surrounding quotes
+            if (
+                strlen($value) >= 2 &&
+                (
+                    (str_starts_with($value, '"')  && str_ends_with($value, '"'))  ||
+                    (str_starts_with($value, "'") && str_ends_with($value, "'"))
+                )
+            ) {
+                $value = substr($value, 1, -1);
+            }
+
+            $result[$key] = $value;
+        }
+
+        return $result;
     }
 
     protected function migrationPath(): string

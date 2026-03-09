@@ -3,8 +3,8 @@
 namespace LuanyCli\Tests\Commands;
 
 use LuanyCli\Commands\MakeMiddlewareCommand;
-use PHPUnit\Framework\TestCase;
 use LuanyCli\Env;
+use PHPUnit\Framework\TestCase;
 
 class MakeMiddlewareCommandTest extends TestCase
 {
@@ -25,24 +25,21 @@ class MakeMiddlewareCommandTest extends TestCase
 
     public function test_creates_middleware_file(): void
     {
-        $command = new MakeMiddlewareCommand();
-        $command->handle(['Auth']);
+        (new MakeMiddlewareCommand())->handle(['Auth']);
 
         $this->assertFileExists($this->baseDir . '/app/Http/Middleware/AuthMiddleware.php');
     }
 
     public function test_appends_middleware_suffix(): void
     {
-        $command = new MakeMiddlewareCommand();
-        $command->handle(['Csrf']);
+        (new MakeMiddlewareCommand())->handle(['Csrf']);
 
         $this->assertFileExists($this->baseDir . '/app/Http/Middleware/CsrfMiddleware.php');
     }
 
     public function test_does_not_duplicate_suffix(): void
     {
-        $command = new MakeMiddlewareCommand();
-        $command->handle(['AuthMiddleware']);
+        (new MakeMiddlewareCommand())->handle(['AuthMiddleware']);
 
         $this->assertFileExists($this->baseDir . '/app/Http/Middleware/AuthMiddleware.php');
         $this->assertFileDoesNotExist($this->baseDir . '/app/Http/Middleware/AuthMiddlewareMiddleware.php');
@@ -50,11 +47,25 @@ class MakeMiddlewareCommandTest extends TestCase
 
     public function test_contains_correct_namespace(): void
     {
-        $command = new MakeMiddlewareCommand();
-        $command->handle(['Auth']);
+        (new MakeMiddlewareCommand())->handle(['Auth']);
 
         $content = file_get_contents($this->baseDir . '/app/Http/Middleware/AuthMiddleware.php');
-        $this->assertStringContainsString('namespace App\Http\Middleware;', $content);
+        $this->assertStringContainsString('namespace App\\Http\\Middleware;', $content);
+    }
+
+    public function test_creates_middleware_in_subdirectory(): void
+    {
+        (new MakeMiddlewareCommand())->handle(['Auth/Login']);
+
+        $this->assertFileExists($this->baseDir . '/app/Http/Middleware/Auth/LoginMiddleware.php');
+    }
+
+    public function test_subdirectory_middleware_has_correct_namespace(): void
+    {
+        (new MakeMiddlewareCommand())->handle(['Auth/Login']);
+
+        $content = file_get_contents($this->baseDir . '/app/Http/Middleware/Auth/LoginMiddleware.php');
+        $this->assertStringContainsString('namespace App\\Http\\Middleware\\Auth;', $content);
     }
 
     public function test_command_name(): void

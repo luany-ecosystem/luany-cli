@@ -1,9 +1,9 @@
 <?php
 
 namespace LuanyCli\Commands;
-use LuanyCli\Env;
 
 use LuanyCli\CommandInterface;
+use LuanyCli\Env;
 
 class MakeMiddlewareCommand implements CommandInterface
 {
@@ -26,29 +26,36 @@ class MakeMiddlewareCommand implements CommandInterface
             exit(1);
         }
 
-        $name = $this->normalise($name, 'Middleware');
-        $dir  = Env::basePath() . '/app/Http/Middleware';
-        $path = "{$dir}/{$name}.php";
+        // Support subdirectory paths: Auth/Login → app/Http/Middleware/Auth/LoginMiddleware.php
+        $segments  = explode('/', str_replace('\\', '/', $name));
+        $className = $this->normalise(array_pop($segments), 'Middleware');
+        $subPath   = implode('/', $segments);
+
+        $namespace = 'App\\Http\\Middleware' . ($subPath ? '\\' . str_replace('/', '\\', $subPath) : '');
+        $dir       = Env::basePath() . '/app/Http/Middleware' . ($subPath ? '/' . $subPath : '');
+        $path      = "{$dir}/{$className}.php";
 
         if (!is_dir($dir)) {
             mkdir($dir, 0755, true);
         }
 
         if (file_exists($path)) {
-            echo "\n  \033[33m⚠\033[0m  {$name} already exists.\n\n";
+            echo "\n  \033[33m⚠\033[0m  {$className} already exists.\n\n";
             exit(0);
         }
 
-        file_put_contents($path, $this->stub($name));
-        echo "\n  \033[32m✓\033[0m  Middleware created: app/Http/Middleware/{$name}.php\n\n";
+        file_put_contents($path, $this->stub($className, $namespace));
+
+        $relative = 'app/Http/Middleware/' . ($subPath ? $subPath . '/' : '') . "{$className}.php";
+        echo "\n  \033[32m✓\033[0m  Middleware created: {$relative}\n\n";
     }
 
-    private function stub(string $name): string
+    private function stub(string $name, string $namespace): string
     {
         return <<<PHP
 <?php
 
-namespace App\Http\Middleware;
+namespace {$namespace};
 
 use Luany\Core\Http\Request;
 use Luany\Core\Http\Response;

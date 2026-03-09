@@ -3,10 +3,10 @@
 
 define('LUANY_CLI', true);
 
-// Instalação global via Composer: vendor/luany/cli/bin/ → vendor/autoload.php
+// Global Composer installation: vendor/luany/cli/bin/ → vendor/autoload.php
 $autoload = __DIR__ . '/../../../autoload.php';
 
-// Fallback para desenvolvimento local
+// Fallback for local development
 if (!file_exists($autoload)) {
     $autoload = __DIR__ . '/../vendor/autoload.php';
 }
