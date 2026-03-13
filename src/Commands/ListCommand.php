@@ -2,11 +2,16 @@
 
 namespace LuanyCli\Commands;
 
-use LuanyCli\CommandInterface;
+use LuanyCli\BaseCommand;
 use LuanyCli\CommandRegistry;
 
-class ListCommand implements CommandInterface
+class ListCommand extends BaseCommand
 {
+    public function requiresProject(): bool
+    {
+        return false;
+    }
+
     public function __construct(private CommandRegistry $registry) {}
 
     public function name(): string

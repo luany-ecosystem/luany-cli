@@ -17,7 +17,7 @@ use LuanyCli\Commands\MigrateFreshCommand;
 use LuanyCli\Commands\MigrateRollbackCommand;
 use LuanyCli\Commands\MigrateStatusCommand;
 use LuanyCli\Commands\ServeCommand;
-use LuanyCli\WelcomeMessage;
+use LuanyCli\Support\ProjectFinder;
 
 class Application
 {
@@ -44,7 +44,31 @@ class Application
             exit(1);
         }
 
+        if ($command->requiresProject()) {
+            self::assertInsideLuanyProject();
+        }
+
         $command->handle($args);
+    }
+
+    /**
+     * Abort with a clear, educative message if the command requires
+     * a Luany project but the current directory is not one.
+     */
+    private static function assertInsideLuanyProject(): void
+    {
+        $base = BASE_DIR;
+
+        if (!ProjectFinder::isLuanyProject($base)) {
+            fwrite(STDERR, "\n  \033[31m✗\033[0m  This command must be run inside a Luany project.\n\n");
+            exit(1);
+        }
+
+        if (!is_dir($base . '/vendor/luany/framework')) {
+            fwrite(STDERR, "\n  \033[33m⚠\033[0m  Luany project detected, but dependencies are not installed.\n");
+            fwrite(STDERR, "     Run: \033[36mcomposer install\033[0m\n\n");
+            exit(1);
+        }
     }
 
     private static function registerCommands(CommandRegistry $registry): void

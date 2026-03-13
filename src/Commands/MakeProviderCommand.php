@@ -2,10 +2,10 @@
 
 namespace LuanyCli\Commands;
 
-use LuanyCli\CommandInterface;
+use LuanyCli\BaseCommand;
 use LuanyCli\Env;
 
-class MakeProviderCommand implements CommandInterface
+class MakeProviderCommand extends BaseCommand
 {
     public function name(): string
     {

@@ -2,10 +2,10 @@
 
 namespace LuanyCli\Commands;
 
-use LuanyCli\CommandInterface;
+use LuanyCli\BaseCommand;
 use LuanyCli\Env;
 
-class KeyGenerateCommand implements CommandInterface
+class KeyGenerateCommand extends BaseCommand
 {
     public function name(): string
     {

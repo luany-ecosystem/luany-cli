@@ -43,18 +43,13 @@ $projectAutoload  = BASE_DIR . '/vendor/autoload.php';
 $isLuanyProject   = LuanyCli\Support\ProjectFinder::isLuanyProject(BASE_DIR);
 $isProjectReady   = is_dir(BASE_DIR . '/vendor/luany/framework');
 
-if ($isLuanyProject) {
-    if ($isProjectReady
-        && file_exists($projectAutoload)
-        && realpath($projectAutoload) !== realpath($cliAutoload)
-    ) {
-        require_once $projectAutoload;
-    } elseif (!$isProjectReady) {
-        fwrite(STDERR, "\n  \033[33m⚠\033[0m  Luany project detected, but dependencies are not installed.\n");
-        fwrite(STDERR, "     Run: \033[36mcomposer install\033[0m\n\n");
-    }
+if ($isLuanyProject
+    && $isProjectReady
+    && file_exists($projectAutoload)
+    && realpath($projectAutoload) !== realpath($cliAutoload)
+) {
+    require_once $projectAutoload;
 }
-
 /*
 |--------------------------------------------------------------------------
 | Run CLI

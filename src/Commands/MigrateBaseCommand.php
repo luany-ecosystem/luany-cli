@@ -2,7 +2,7 @@
 
 namespace LuanyCli\Commands;
 
-use LuanyCli\CommandInterface;
+use LuanyCli\BaseCommand;
 use LuanyCli\Env;
 
 /**
@@ -12,7 +12,7 @@ use LuanyCli\Env;
  * directly from .env — intentionally avoids the framework bootstrap
  * so the CLI remains usable before the app is fully configured.
  */
-abstract class MigrateBaseCommand implements CommandInterface
+abstract class MigrateBaseCommand extends BaseCommand
 {
     /**
      * Load the project's vendor/autoload.php so framework classes

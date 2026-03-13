@@ -16,6 +16,7 @@ class ListCommandTest extends TestCase
             public function name(): string { return $this->n; }
             public function description(): string { return $this->d; }
             public function handle(array $args): void {}
+            public function requiresProject(): bool { return true; }
         };
     }
 

@@ -2,11 +2,16 @@
 
 namespace LuanyCli\Commands;
 
-use LuanyCli\CommandInterface;
+use LuanyCli\BaseCommand;
 use LuanyCli\Env;
 
-class AboutCommand implements CommandInterface
+class AboutCommand extends BaseCommand
 {
+    public function requiresProject(): bool
+    {
+        return false;
+    }
+
     public function name(): string
     {
         return 'about';

@@ -2,10 +2,10 @@
 
 namespace LuanyCli\Commands;
 
-use LuanyCli\CommandInterface;
+use LuanyCli\BaseCommand;
 use LuanyCli\Env;
 
-class CacheClearCommand implements CommandInterface
+class CacheClearCommand extends BaseCommand
 {
     public function name(): string
     {

@@ -19,4 +19,10 @@ interface CommandInterface
      * Execute the command.
      */
     public function handle(array $args): void;
+
+    /**
+     * Whether this command requires a valid, installed Luany project.
+     * Commands that return false (e.g. about, list) run anywhere.
+     */
+    public function requiresProject(): bool;
 }
