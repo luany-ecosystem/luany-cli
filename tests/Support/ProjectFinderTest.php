@@ -11,16 +11,17 @@ class ProjectFinderTest extends TestCase
 
     protected function setUp(): void
     {
-        // Simula um projecto Luany completo
         $this->projectRoot = sys_get_temp_dir() . '/luany_project_' . uniqid();
-        mkdir($this->projectRoot . '/vendor', 0755, true);
-        file_put_contents($this->projectRoot . '/composer.json', '{}');
+        mkdir($this->projectRoot, 0755, true);
+        $this->writeLuanyComposerJson($this->projectRoot);
     }
 
     protected function tearDown(): void
     {
         $this->removeDir($this->projectRoot);
     }
+
+    // ── findRoot() ────────────────────────────────────────────────────────────
 
     public function test_finds_root_from_project_root(): void
     {
@@ -46,16 +47,49 @@ class ProjectFinderTest extends TestCase
         $this->assertSame(realpath($this->projectRoot), ProjectFinder::findRoot());
     }
 
-    public function test_ignores_directory_with_composer_json_but_no_vendor(): void
+    public function test_detects_luany_project_without_vendor(): void
     {
-        // Subdir com composer.json mas sem vendor — não é root
-        $subDir = $this->projectRoot . '/packages/my-package';
-        mkdir($subDir, 0755, true);
-        file_put_contents($subDir . '/composer.json', '{}');
-        chdir($subDir);
+        // Project declared in composer.json but composer install not yet run
+        $dir = sys_get_temp_dir() . '/luany_no_vendor_' . uniqid();
+        mkdir($dir, 0755, true);
+        $this->writeLuanyComposerJson($dir);
+        chdir($dir);
 
-        // Deve subir e encontrar o projectRoot que tem vendor
-        $this->assertSame(realpath($this->projectRoot), ProjectFinder::findRoot());
+        $this->assertSame(realpath($dir), ProjectFinder::findRoot());
+
+        $this->removeDir($dir);
+    }
+
+    public function test_ignores_non_luany_composer_json(): void
+    {
+        // A plain PHP project — composer.json has no luany dependency
+        $plain = sys_get_temp_dir() . '/plain_project_' . uniqid();
+        mkdir($plain . '/vendor', 0755, true);
+        file_put_contents($plain . '/composer.json', json_encode([
+            'require' => ['monolog/monolog' => '^3.0'],
+        ]));
+        chdir($plain);
+
+        $result = ProjectFinder::findRoot();
+
+        // Must NOT return the plain project — fallback to cwd
+        $this->assertSame(realpath(getcwd()), $result);
+
+        $this->removeDir($plain);
+    }
+
+    public function test_ignores_composer_json_without_require_key(): void
+    {
+        $dir = sys_get_temp_dir() . '/empty_composer_' . uniqid();
+        mkdir($dir, 0755, true);
+        file_put_contents($dir . '/composer.json', json_encode(['name' => 'vendor/package']));
+        chdir($dir);
+
+        $result = ProjectFinder::findRoot();
+        $this->assertIsString($result);
+        $this->assertNotEmpty($result);
+
+        $this->removeDir($dir);
     }
 
     public function test_falls_back_to_cwd_when_no_project_found(): void
@@ -66,11 +100,62 @@ class ProjectFinderTest extends TestCase
 
         $result = ProjectFinder::findRoot();
 
-        // Deve retornar sempre uma string não vazia — o fallback nunca falha
         $this->assertIsString($result);
         $this->assertNotEmpty($result);
 
         rmdir($isolated);
+    }
+
+    // ── isLuanyProject() ──────────────────────────────────────────────────────
+
+    public function test_is_luany_project_returns_true_for_framework_dependency(): void
+    {
+        $this->assertTrue(ProjectFinder::isLuanyProject($this->projectRoot));
+    }
+
+    public function test_is_luany_project_returns_true_for_core_dependency(): void
+    {
+        $dir = sys_get_temp_dir() . '/luany_core_' . uniqid();
+        mkdir($dir, 0755, true);
+        file_put_contents($dir . '/composer.json', json_encode([
+            'require' => ['luany/core' => '^0.2'],
+        ]));
+
+        $this->assertTrue(ProjectFinder::isLuanyProject($dir));
+
+        $this->removeDir($dir);
+    }
+
+    public function test_is_luany_project_returns_false_without_composer_json(): void
+    {
+        $dir = sys_get_temp_dir() . '/luany_empty_' . uniqid();
+        mkdir($dir, 0755, true);
+
+        $this->assertFalse(ProjectFinder::isLuanyProject($dir));
+
+        rmdir($dir);
+    }
+
+    public function test_is_luany_project_returns_false_for_non_luany_project(): void
+    {
+        $dir = sys_get_temp_dir() . '/non_luany_' . uniqid();
+        mkdir($dir, 0755, true);
+        file_put_contents($dir . '/composer.json', json_encode([
+            'require' => ['laravel/framework' => '^11.0'],
+        ]));
+
+        $this->assertFalse(ProjectFinder::isLuanyProject($dir));
+
+        $this->removeDir($dir);
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private function writeLuanyComposerJson(string $dir): void
+    {
+        file_put_contents($dir . '/composer.json', json_encode([
+            'require' => ['luany/framework' => '^0.3'],
+        ]));
     }
 
     private function removeDir(string $dir): void

@@ -28,14 +28,31 @@ define('BASE_DIR', $base);
 
 /*
 |--------------------------------------------------------------------------
-| Load project autoload (VERY IMPORTANT)
+| Load project autoload
+|
+| Only loaded when inside a valid Luany project (luany/framework or
+| luany/core declared in composer.json) AND dependencies are installed
+| (vendor/luany/framework exists).
+|
+| If the project is detected but not yet installed, the developer
+| receives a clear, educative message instead of a fatal error.
 |--------------------------------------------------------------------------
 */
 
-$projectAutoload = BASE_DIR . '/vendor/autoload.php';
+$projectAutoload  = BASE_DIR . '/vendor/autoload.php';
+$isLuanyProject   = LuanyCli\Support\ProjectFinder::isLuanyProject(BASE_DIR);
+$isProjectReady   = is_dir(BASE_DIR . '/vendor/luany/framework');
 
-if (file_exists($projectAutoload)) {
-    require_once $projectAutoload;
+if ($isLuanyProject) {
+    if ($isProjectReady
+        && file_exists($projectAutoload)
+        && realpath($projectAutoload) !== realpath($cliAutoload)
+    ) {
+        require_once $projectAutoload;
+    } elseif (!$isProjectReady) {
+        fwrite(STDERR, "\n  \033[33m⚠\033[0m  Luany project detected, but dependencies are not installed.\n");
+        fwrite(STDERR, "     Run: \033[36mcomposer install\033[0m\n\n");
+    }
 }
 
 /*

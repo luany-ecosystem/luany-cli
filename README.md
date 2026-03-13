@@ -1,6 +1,6 @@
 # luany/cli
 
-> Official CLI for the Luany Framework.
+> Official CLI for the Luany Framework — global developer tool with intelligent project detection.
 
 ## Installation
 
@@ -27,6 +27,18 @@ luany make:controller Home
 luany serve
 ```
 
+## Project Detection
+
+The CLI automatically detects whether you are inside a Luany project by reading
+`composer.json` and verifying that `luany/framework` or `luany/core` is declared
+as a dependency — no `vendor/` directory required.
+
+| Context | Behaviour |
+|---|---|
+| Outside any project | CLI runs normally, no warnings |
+| Luany project — dependencies installed | Full CLI with framework autoload |
+| Luany project — `composer install` not run | Warning shown, scaffolding still available |
+
 ## Usage
 ```bash
 luany <command> [arguments]
@@ -52,17 +64,35 @@ luany <command> [arguments]
 | `list` | List all available commands |
 | `about` | Display information about the current project |
 
+## Subdirectory support
+
+`make:controller` and `make:middleware` support subdirectory notation:
+```bash
+luany make:controller Auth/LoginController    # → app/Controllers/Auth/LoginController.php
+luany make:middleware Auth/JwtMiddleware       # → app/Http/Middleware/Auth/JwtMiddleware.php
+```
+
 ## make:view examples
 ```bash
 luany make:view pages.about                    # page view (extends layout)
 luany make:view components.card component      # self-contained component
 luany make:view layouts.admin layout           # base layout
+luany make:view pages.products.index           # nested subdirectory
 ```
 
 ## Requirements
 
 - PHP 8.1+
 - Composer 2.0+
+
+## Testing
+```bash
+composer install
+vendor/bin/phpunit --testdox
+```
+```
+OK (69 tests, 83 assertions)
+```
 
 ## License
 
