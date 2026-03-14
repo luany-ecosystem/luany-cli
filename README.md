@@ -37,7 +37,8 @@ as a dependency — no `vendor/` directory required.
 |---|---|
 | Outside any project | CLI runs normally, no warnings |
 | Luany project — dependencies installed | Full CLI with framework autoload |
-| Luany project — `composer install` not run | Warning shown, scaffolding still available |
+| Luany project — `composer install` not run | Warning shown, scaffolding commands blocked |
+| Project command run outside project | Clear error message, no fatal errors |
 
 ## Usage
 ```bash
@@ -46,6 +47,15 @@ luany <command> [arguments]
 
 ## Commands
 
+### Global — run anywhere
+| Command | Description |
+|---|---|
+| `new <project-name>` | Create a new Luany project |
+| `doctor` | Check the Luany environment and project health |
+| `about` | Display information about the current project |
+| `list` | List all available commands |
+
+### Project — require a valid Luany project
 | Command | Description |
 |---|---|
 | `serve` | Start the built-in PHP development server |
@@ -61,8 +71,45 @@ luany <command> [arguments]
 | `migrate:fresh` | Drop all tables and re-run all migrations |
 | `key:generate` | Generate and set APP_KEY in .env |
 | `cache:clear` | Clear compiled view cache |
-| `list` | List all available commands |
-| `about` | Display information about the current project |
+
+## luany new
+```bash
+luany new my-app
+```
+
+Creates a new Luany project in a `my-app/` directory. Equivalent to
+`composer create-project luany/luany my-app` but with a guided experience.
+
+## luany doctor
+```bash
+luany doctor
+```
+
+Outside a project — checks the global environment:
+```
+Luany Environment Check
+──────────────────────────────────────────────────
+✓  PHP version                   8.4.6
+✓  ext/pdo                       loaded
+✓  ext/pdo_mysql                 loaded
+✓  ext/mbstring                  loaded
+✓  ext/openssl                   loaded
+✓  ext/json                      loaded
+✓  Composer                      2.8.5
+✓  luany/cli                     v0.2.0
+```
+
+Inside a project — additionally checks project health:
+```
+Project Health
+──────────────────────────────────────────────────
+✓  .env                          found
+✓  vendor                        found
+✓  vendor/luany/framework        found
+✓  database/migrations           found
+✓  database connection           ok
+✓  _migrations table             found
+```
 
 ## Subdirectory support
 
@@ -91,7 +138,7 @@ composer install
 vendor/bin/phpunit --testdox
 ```
 ```
-OK (69 tests, 83 assertions)
+OK (79 tests, 95 assertions)
 ```
 
 ## License

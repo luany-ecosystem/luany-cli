@@ -18,6 +18,8 @@ use LuanyCli\Commands\MigrateRollbackCommand;
 use LuanyCli\Commands\MigrateStatusCommand;
 use LuanyCli\Commands\ServeCommand;
 use LuanyCli\Support\ProjectFinder;
+use LuanyCli\Commands\DoctorCommand;
+use LuanyCli\Commands\NewCommand;
 
 class Application
 {
@@ -88,5 +90,7 @@ class Application
         $registry->register(new CacheClearCommand());
         $registry->register(new AboutCommand());
         $registry->register(new ListCommand($registry));
+        $registry->register(new NewCommand());
+        $registry->register(new DoctorCommand());
     }
 }
