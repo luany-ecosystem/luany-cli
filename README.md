@@ -107,6 +107,12 @@ Project Health
 ✓  vendor                        found
 ✓  vendor/luany/framework        found
 ✓  database/migrations           found
+✓  APP_KEY                       configured
+✓  bootstrap/app.php             found
+✓  public/index.php              found
+✓  config/app.php                found
+✓  storage/cache/views           writable
+✓  storage/logs                  writable
 ✓  database connection           ok
 ✓  _migrations table             found
 ```
