@@ -1,0 +1,84 @@
+<?php
+
+namespace App\Controllers;
+
+use App\Models\{{Model}};
+use Luany\Core\Http\Request;
+
+class {{Model}}Controller extends Controller
+{
+    public function index(Request $request): string
+    {
+        ${{items}} = {{Model}}::all();
+
+        return view('pages.{{slug}}.index', compact('{{items}}'));
+    }
+
+    public function show(Request $request, int $id): string
+    {
+        ${{item}} = {{Model}}::find($id);
+
+        if (!${{item}}) {
+            abort(404);
+        }
+
+        return view('pages.{{slug}}.show', compact('{{item}}'));
+    }
+
+    public function create(Request $request): string
+    {
+        return view('pages.{{slug}}.create');
+    }
+
+    public function store(Request $request): \Luany\Core\Http\Response
+    {
+        $validated = $request->only([{{fillable_keys}}]);
+
+        {{Model}}::create($validated);
+
+        return redirect('/{{slug}}');
+    }
+
+    public function edit(Request $request, int $id): string
+    {
+        ${{item}} = {{Model}}::find($id);
+
+        if (!${{item}}) {
+            abort(404);
+        }
+
+        return view('pages.{{slug}}.edit', compact('{{item}}'));
+    }
+
+    public function update(Request $request, int $id): \Luany\Core\Http\Response
+    {
+        ${{item}} = {{Model}}::find($id);
+
+        if (!${{item}}) {
+            abort(404);
+        }
+
+        $validated = $request->only([{{fillable_keys}}]);
+
+        foreach ($validated as $key => $value) {
+            ${{item}}->$key = $value;
+        }
+
+        ${{item}}->save();
+
+        return redirect('/{{slug}}/' . $id);
+    }
+
+    public function destroy(Request $request, int $id): \Luany\Core\Http\Response
+    {
+        ${{item}} = {{Model}}::find($id);
+
+        if (!${{item}}) {
+            abort(404);
+        }
+
+        ${{item}}->delete();
+
+        return redirect('/{{slug}}');
+    }
+}

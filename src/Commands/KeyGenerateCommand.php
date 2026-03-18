@@ -44,3 +44,4 @@ class KeyGenerateCommand extends BaseCommand
         echo "  \033[32m✓\033[0m  Application key set.\n\n";
     }
 }
+

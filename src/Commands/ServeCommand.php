@@ -29,3 +29,4 @@ class ServeCommand extends BaseCommand
         passthru("php -S {$host}:{$port} -t " . escapeshellarg(Env::basePath() . '/public'));
     }
 }
+

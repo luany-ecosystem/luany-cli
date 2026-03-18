@@ -1,0 +1,73 @@
+@extends('{{layout}}')
+
+@section('title'){{Model}} List@endsection
+
+@style
+    .{{slug}}-wrap { max-width: 1100px; margin: 0 auto; padding: var(--space-8) var(--space-6); }
+    .{{slug}}-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-6); }
+    .{{slug}}-header h1 { font-size: var(--text-2xl); font-weight: 700; color: var(--color-text); }
+    .btn-primary { background: var(--luany-gradient); color: #fff; padding: var(--space-3) var(--space-6); border-radius: var(--radius-md); font-size: var(--text-sm); font-weight: 600; transition: opacity var(--transition); display: inline-flex; align-items: center; gap: var(--space-2); }
+    .btn-primary:hover { opacity: .85; }
+    .table-wrap { background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-card); }
+    table { width: 100%; border-collapse: collapse; }
+    thead { background: var(--color-bg-elevated); }
+    th { padding: var(--space-3) var(--space-4); text-align: left; font-size: var(--text-xs); font-weight: 600; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: .06em; white-space: nowrap; }
+    td { padding: var(--space-3) var(--space-4); border-top: 1px solid var(--color-border); color: var(--color-text); font-size: var(--text-sm); vertical-align: middle; }
+    tbody tr { transition: background var(--transition); }
+    tbody tr:hover { background: var(--color-bg-elevated); }
+    .actions { display: flex; gap: var(--space-2); }
+    .btn-view { color: var(--luany-orange); font-size: var(--text-xs); font-weight: 600; padding: var(--space-1) var(--space-3); border: 1px solid var(--luany-orange); border-radius: var(--radius-sm); transition: background var(--transition), color var(--transition); }
+    .btn-view:hover { background: var(--luany-orange); color: #fff; }
+    .btn-edit { color: var(--color-info); font-size: var(--text-xs); font-weight: 600; padding: var(--space-1) var(--space-3); border: 1px solid var(--color-info); border-radius: var(--radius-sm); transition: background var(--transition), color var(--transition); }
+    .btn-edit:hover { background: var(--color-info); color: #fff; }
+    .btn-delete { color: var(--color-error); font-size: var(--text-xs); font-weight: 600; padding: var(--space-1) var(--space-3); border: 1px solid var(--color-error); border-radius: var(--radius-sm); background: none; cursor: pointer; transition: background var(--transition), color var(--transition); font-family: inherit; }
+    .btn-delete:hover { background: var(--color-error); color: #fff; }
+    .empty-state { text-align: center; padding: var(--space-16); color: var(--color-text-muted); font-size: var(--text-sm); }
+@endstyle
+
+@section('content')
+    <div class="{{slug}}-wrap">
+        <div class="{{slug}}-header">
+            <h1>{{Model}} List</h1>
+            <a href="/{{slug}}/create" class="btn-primary">+ New {{Model}}</a>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+{{index_headers}}
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse(${{items}} as ${{item}})
+                        <tr>
+                            <td>{{ ${{item}}->id }}</td>
+{{index_rows}}
+                            <td>
+                                <div class="actions">
+                                    <a href="/{{slug}}/{{ ${{item}}->id }}" class="btn-view">View</a>
+                                    <a href="/{{slug}}/{{ ${{item}}->id }}/edit" class="btn-edit">Edit</a>
+                                    <form method="POST" action="/{{slug}}/{{ ${{item}}->id }}" style="display:inline;">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn-delete" onclick="return confirm('Delete this {{item}}?')">Delete</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="100%" class="empty-state">No {{items}} found yet. <a href="/{{slug}}/create" style="color:var(--luany-orange)">Create the first one →</a></td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+@endsection
+
+@script(defer)
+    // {{Model}} list interactions
+@endscript

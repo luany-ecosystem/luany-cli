@@ -1,0 +1,46 @@
+@extends('{{layout}}')
+
+@section('title')Create {{Model}}@endsection
+
+@style
+    .{{slug}}-wrap { max-width: 720px; margin: 0 auto; padding: var(--space-8) var(--space-6); }
+    .{{slug}}-wrap h1 { font-size: var(--text-2xl); font-weight: 700; color: var(--color-text); margin-bottom: var(--space-2); }
+    .form-subtitle { color: var(--color-text-muted); font-size: var(--text-sm); margin-bottom: var(--space-6); }
+    .form-card { background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: var(--space-8); box-shadow: var(--shadow-card); }
+    .form-group { margin-bottom: var(--space-5); }
+    .form-group label { display: block; margin-bottom: var(--space-2); font-size: var(--text-sm); font-weight: 600; color: var(--color-text-muted); }
+    .form-control { width: 100%; padding: var(--space-3) var(--space-4); background: var(--color-bg-elevated); border: 1px solid var(--color-border); border-radius: var(--radius-md); color: var(--color-text); font-family: var(--font-body); font-size: var(--text-base); transition: border-color var(--transition), box-shadow var(--transition); outline: none; }
+    .form-control:focus { border-color: var(--luany-purple-mid); box-shadow: 0 0 0 3px var(--luany-purple-glass); }
+    textarea.form-control { min-height: 120px; resize: vertical; }
+    .checkbox-group { display: flex; align-items: center; gap: var(--space-3); }
+    .checkbox-group input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--luany-purple); cursor: pointer; flex-shrink: 0; }
+    .checkbox-group label { margin-bottom: 0; cursor: pointer; }
+    .form-divider { height: 1px; background: var(--color-border); margin: var(--space-6) 0; }
+    .form-actions { display: flex; gap: var(--space-3); align-items: center; }
+    .btn-submit { background: var(--luany-gradient); color: #fff; padding: var(--space-3) var(--space-6); border: none; border-radius: var(--radius-md); font-family: var(--font-body); font-size: var(--text-sm); font-weight: 600; cursor: pointer; transition: opacity var(--transition); }
+    .btn-submit:hover { opacity: .85; }
+    .btn-cancel { color: var(--color-text-muted); font-size: var(--text-sm); transition: color var(--transition); padding: var(--space-3) var(--space-4); }
+    .btn-cancel:hover { color: var(--color-text); }
+@endstyle
+
+@section('content')
+    <div class="{{slug}}-wrap">
+        <h1>Create {{Model}}</h1>
+        <p class="form-subtitle">Fill in the details below to create a new {{item}}.</p>
+        <div class="form-card">
+            <form method="POST" action="/{{slug}}">
+                @csrf
+{{form_fields}}
+                <div class="form-divider"></div>
+                <div class="form-actions">
+                    <button type="submit" class="btn-submit">Create {{Model}}</button>
+                    <a href="/{{slug}}" class="btn-cancel">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+@endsection
+
+@script(defer)
+    // {{Model}} create interactions
+@endscript

@@ -50,3 +50,4 @@ class NewCommandTest extends TestCase
         rmdir($dir);
     }
 }
+

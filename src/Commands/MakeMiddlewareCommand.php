@@ -28,7 +28,7 @@ class MakeMiddlewareCommand extends BaseCommand
 
         // Support subdirectory paths: Auth/Login → app/Http/Middleware/Auth/LoginMiddleware.php
         $segments  = explode('/', str_replace('\\', '/', $name));
-        $className = $this->normalise(array_pop($segments), 'Middleware');
+        $className = $this->normalizeName(array_pop($segments), 'Middleware');
         $subPath   = implode('/', $segments);
 
         $namespace = 'App\\Http\\Middleware' . ($subPath ? '\\' . str_replace('/', '\\', $subPath) : '');
@@ -74,9 +74,7 @@ class {$name} implements MiddlewareInterface
 PHP;
     }
 
-    private function normalise(string $name, string $suffix): string
-    {
-        $name = ucfirst($name);
-        return str_ends_with($name, $suffix) ? $name : $name . $suffix;
-    }
 }
+
+
+

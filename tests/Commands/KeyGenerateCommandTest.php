@@ -71,3 +71,4 @@ class KeyGenerateCommandTest extends TestCase
         rmdir($dir);
     }
 }
+

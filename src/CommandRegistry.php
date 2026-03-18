@@ -26,3 +26,4 @@ class CommandRegistry
         return isset($this->commands[$name]);
     }
 }
+

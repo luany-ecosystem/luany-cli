@@ -110,3 +110,4 @@ class MakeViewCommandTest extends TestCase
         rmdir($dir);
     }
 }
+

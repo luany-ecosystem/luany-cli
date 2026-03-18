@@ -84,3 +84,5 @@ class MakeControllerCommandTest extends TestCase
         rmdir($dir);
     }
 }
+
+

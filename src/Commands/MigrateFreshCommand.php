@@ -41,3 +41,4 @@ class MigrateFreshCommand extends MigrateBaseCommand
         echo "\n  \033[32m✓\033[0m  {$count} migration(s) complete.\n\n";
     }
 }
+

@@ -145,15 +145,7 @@ class DoctorCommand extends BaseCommand
             return;
         }
 
-        $env = [];
-        foreach (file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
-            $line = trim($line);
-            if (str_starts_with($line, '#') || !str_contains($line, '=')) continue;
-            $pos         = strpos($line, '=');
-            $key         = trim(substr($line, 0, $pos));
-            $value       = trim(substr($line, $pos + 1));
-            $env[$key]   = trim($value, '"\'');
-        }
+        $env = \LuanyCli\Support\EnvParser::parse($envFile);
 
         try {
             $dsn = sprintf(
@@ -186,3 +178,4 @@ class DoctorCommand extends BaseCommand
         printf("  %s  %-30s %s\n", $icon, $label, $value);
     }
 }
+

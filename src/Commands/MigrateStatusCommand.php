@@ -39,3 +39,4 @@ class MigrateStatusCommand extends MigrateBaseCommand
         echo "\n";
     }
 }
+

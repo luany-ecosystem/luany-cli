@@ -1,0 +1,17 @@
+<?php
+
+namespace App\Models;
+
+use Luany\Database\Model;
+
+class {{Model}} extends Model
+{
+    protected string $table = '{{table}}';
+
+    protected array $fillable = [
+{{fillable}}
+    ];
+
+    protected array $hidden = [];
+{{casts}}
+}

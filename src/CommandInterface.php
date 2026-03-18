@@ -26,3 +26,4 @@ interface CommandInterface
      */
     public function requiresProject(): bool;
 }
+

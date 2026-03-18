@@ -28,7 +28,7 @@ class MakeControllerCommand extends BaseCommand
 
         // Support subdirectory paths: Auth/Login → app/Controllers/Auth/LoginController.php
         $segments  = explode('/', str_replace('\\', '/', $name));
-        $className = $this->normalise(array_pop($segments), 'Controller');
+        $className = $this->normalizeName(array_pop($segments), 'Controller');
         $subPath   = implode('/', $segments);
 
         $namespace = 'App\\Controllers' . ($subPath ? '\\' . str_replace('/', '\\', $subPath) : '');
@@ -69,9 +69,7 @@ class {$name} extends Controller
 PHP;
     }
 
-    private function normalise(string $name, string $suffix): string
-    {
-        $name = ucfirst($name);
-        return str_ends_with($name, $suffix) ? $name : $name . $suffix;
-    }
 }
+
+
+

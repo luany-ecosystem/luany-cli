@@ -122,3 +122,4 @@ class AboutCommand extends BaseCommand
         return 'unknown';
     }
 }
+

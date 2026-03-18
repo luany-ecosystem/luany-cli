@@ -87,3 +87,4 @@ class DoctorCommandTest extends TestCase
         rmdir($dir);
     }
 }
+

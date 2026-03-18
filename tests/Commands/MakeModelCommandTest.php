@@ -74,3 +74,4 @@ class MakeModelCommandTest extends TestCase
         rmdir($dir);
     }
 }
+

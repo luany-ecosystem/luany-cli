@@ -43,3 +43,4 @@ class ListCommand extends BaseCommand
         echo "\n";
     }
 }
+

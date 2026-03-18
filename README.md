@@ -71,6 +71,7 @@ luany <command> [arguments]
 | `migrate:fresh` | Drop all tables and re-run all migrations |
 | `key:generate` | Generate and set APP_KEY in .env |
 | `cache:clear` | Clear compiled view cache |
+| `make:feature <Name>` | Scaffold a complete feature (model, controller, migration, views, routes) |
 
 ## luany new
 ```bash
@@ -133,6 +134,62 @@ luany make:view layouts.admin layout           # base layout
 luany make:view pages.products.index           # nested subdirectory
 ```
 
+## luany make:feature
+```bash
+# Interactive mode
+luany make:feature Product
+
+# Inline mode (no prompts)
+luany make:feature Product name:string price:decimal active:boolean
+```
+
+Scaffolds a complete feature interactively or via inline fields:
+```
+  Using layout: layouts.main
+
+  Add fields? [yes/no]: yes
+
+  Field name (or 'done' to finish): name
+  Type [string/text/integer/boolean/email/date/decimal]: string
+
+  Field name (or 'done' to finish): price
+  Type [string/text/integer/boolean/email/date/decimal]: decimal
+
+  Field name (or 'done' to finish): done
+
+  →  Creating feature [Product]...
+
+  ✓  Model created:      app/Models/Product.php
+  ✓  Controller created: app/Controllers/ProductController.php
+  ✓  Migration created:  database/migrations/TIMESTAMP_create_products_table.php
+  ✓  View created:       views/pages/products/index.lte
+  ✓  View created:       views/pages/products/show.lte
+  ✓  View created:       views/pages/products/create.lte
+  ✓  View created:       views/pages/products/edit.lte
+  ✓  Routes appended:    routes/http.php
+
+  Routes available:
+    GET     /products                → index
+    GET     /products/create         → create
+    POST    /products                → store
+    GET     /products/{id}           → show
+    GET     /products/{id}/edit      → edit
+    PUT     /products/{id}           → update
+    DELETE  /products/{id}           → destroy
+```
+
+Generates in one command: model with `$fillable` and `$casts`, controller with full CRUD (`index`, `show`, `create`, `store`, `edit`, `update`, `destroy`), migration with all columns, four LTE views with design tokens, and a `Route::resource` entry in `routes/http.php`.
+
+| Field type | Migration | Form input | Cast | Behavior |
+|---|---|---|---|---|
+| `string` | `VARCHAR(255)` | `text` | — | `required`, `placeholder="Enter {Label}"` |
+| `text` | `TEXT` | `textarea` | — | `required`, `placeholder="Enter {Label}"` |
+| `integer` | `INT` | `number` | `int` | `required`, `placeholder="Enter {Label}"` |
+| `boolean` | `TINYINT(1)` | `checkbox` | `bool` | no `required`/placeholder |
+| `email` | `VARCHAR(150)` | `email` | — | `required`, `placeholder="Enter {Label}"` |
+| `date` | `DATE` | `date` | — | `required`, `placeholder="Enter {Label}"` |
+| `decimal` | `DECIMAL(10,2)` | `number step="0.01"` | `float` | `required`, `placeholder="Enter {Label}"` |
+
 ## Requirements
 
 - PHP 8.1+
@@ -144,8 +201,12 @@ composer install
 vendor/bin/phpunit --testdox
 ```
 ```
-OK (79 tests, 95 assertions)
+OK (134 tests, 185 assertions)
 ```
+
+## Notes on recent improvements
+- `FieldParser` now applies `required` + `placeholder` to generated form fields (`toFormFields`) and `placeholder` to edit fields (`toEditFields`, without required).
+- `.env` parsing was centralized via `Support\EnvParser`, usado por `MigrateBaseCommand` e `DoctorCommand` para mais confiabilidade (quotes, base64, `=` em valores).
 
 ## License
 

@@ -18,4 +18,11 @@ abstract class BaseCommand implements CommandInterface
     {
         return true;
     }
+
+    protected function normalizeName(string $name, string $suffix): string
+    {
+        $name = ucfirst($name);
+        return str_ends_with($name, $suffix) ? $name : $name . $suffix;
+    }
 }
+

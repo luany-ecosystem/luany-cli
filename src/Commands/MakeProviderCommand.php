@@ -26,7 +26,7 @@ class MakeProviderCommand extends BaseCommand
             exit(1);
         }
 
-        $name = $this->normalise($name, 'ServiceProvider');
+        $name = $this->normalizeName($name, 'ServiceProvider');
         $dir  = Env::basePath() . '/app/Providers';
         $path = "{$dir}/{$name}.php";
 
@@ -68,9 +68,7 @@ class {$name} extends ServiceProvider
 PHP;
     }
 
-    private function normalise(string $name, string $suffix): string
-    {
-        $name = ucfirst($name);
-        return str_ends_with($name, $suffix) ? $name : $name . $suffix;
-    }
 }
+
+
+

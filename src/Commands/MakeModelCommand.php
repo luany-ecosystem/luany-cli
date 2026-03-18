@@ -75,3 +75,5 @@ PHP;
         return $snake . 's';
     }
 }
+
+

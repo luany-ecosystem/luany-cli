@@ -81,3 +81,4 @@ class MakeMigrationCommandTest extends TestCase
         rmdir($dir);
     }
 }
+

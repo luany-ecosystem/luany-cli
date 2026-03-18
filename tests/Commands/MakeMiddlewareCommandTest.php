@@ -84,3 +84,5 @@ class MakeMiddlewareCommandTest extends TestCase
         rmdir($dir);
     }
 }
+
+

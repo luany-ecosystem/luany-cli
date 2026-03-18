@@ -47,3 +47,4 @@ class ProjectFinder
         return isset($require['luany/framework']) || isset($require['luany/core']);
     }
 }
+

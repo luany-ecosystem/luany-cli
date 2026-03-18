@@ -40,3 +40,4 @@ class MigrateRollbackCommand extends MigrateBaseCommand
         return new MigrationRunner($this->pdo(), $this->migrationPath());
     }
 }
+

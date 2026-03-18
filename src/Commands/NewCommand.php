@@ -49,3 +49,4 @@ class NewCommand extends BaseCommand
         echo "\n  \033[32m✓\033[0m  Done! Now run: \033[36mcd {$name}\033[0m\n\n";
     }
 }
+

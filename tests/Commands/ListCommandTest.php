@@ -56,3 +56,4 @@ class ListCommandTest extends TestCase
         $this->assertStringContainsString('Start the server', $output);
     }
 }
+

@@ -169,3 +169,4 @@ class ProjectFinderTest extends TestCase
         rmdir($dir);
     }
 }
+

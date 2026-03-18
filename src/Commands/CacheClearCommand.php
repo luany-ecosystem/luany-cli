@@ -30,3 +30,4 @@ class CacheClearCommand extends BaseCommand
         echo "\n  \033[32m✓\033[0m  Cache cleared ({$count} file(s) removed).\n\n";
     }
 }
+

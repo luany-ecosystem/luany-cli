@@ -65,3 +65,4 @@ class MakeProviderCommandTest extends TestCase
         rmdir($dir);
     }
 }
+

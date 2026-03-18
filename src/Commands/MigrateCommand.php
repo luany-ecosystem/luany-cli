@@ -40,3 +40,4 @@ class MigrateCommand extends MigrateBaseCommand
         return new MigrationRunner($this->pdo(), $this->migrationPath());
     }
 }
+

@@ -58,3 +58,4 @@ class CacheClearCommandTest extends TestCase
         rmdir($dir);
     }
 }
+

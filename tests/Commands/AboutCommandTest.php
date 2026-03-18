@@ -58,3 +58,4 @@ class AboutCommandTest extends TestCase
         rmdir($dir);
     }
 }
+
