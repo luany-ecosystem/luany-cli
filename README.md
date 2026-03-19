@@ -201,7 +201,7 @@ composer install
 vendor/bin/phpunit --testdox
 ```
 ```
-OK (134 tests, 185 assertions)
+OK (128 tests, 177 assertions)
 ```
 
 ## Notes on recent improvements
