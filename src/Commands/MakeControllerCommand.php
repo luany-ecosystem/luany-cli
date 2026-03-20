@@ -58,6 +58,7 @@ class MakeControllerCommand extends BaseCommand
 namespace {$namespace};
 
 use Luany\Core\Http\Request;
+use Luany\Core\Http\Response;
 
 class {$name} extends Controller
 {

@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Models\{{Model}};
 use Luany\Core\Http\Request;
+use Luany\Core\Http\Response;
 
 class {{Model}}Controller extends Controller
 {
@@ -30,11 +31,13 @@ class {{Model}}Controller extends Controller
         return view('pages.{{slug}}.create');
     }
 
-    public function store(Request $request): \Luany\Core\Http\Response
+    public function store(Request $request): Response
     {
-        $validated = $request->only([{{fillable_keys}}]);
+        $data = validate($request->body(), [
+{{validation_rules}}
+        ], '/{{slug}}/create');
 
-        {{Model}}::create($validated);
+        {{Model}}::create($data);
 
         return redirect('/{{slug}}');
     }
@@ -50,7 +53,7 @@ class {{Model}}Controller extends Controller
         return view('pages.{{slug}}.edit', compact('{{item}}'));
     }
 
-    public function update(Request $request, int $id): \Luany\Core\Http\Response
+    public function update(Request $request, int $id): Response
     {
         ${{item}} = {{Model}}::find($id);
 
@@ -58,9 +61,11 @@ class {{Model}}Controller extends Controller
             abort(404);
         }
 
-        $validated = $request->only([{{fillable_keys}}]);
+        $data = validate($request->body(), [
+{{validation_rules}}
+        ], '/{{slug}}/' . $id . '/edit');
 
-        foreach ($validated as $key => $value) {
+        foreach ($data as $key => $value) {
             ${{item}}->$key = $value;
         }
 
@@ -69,7 +74,7 @@ class {{Model}}Controller extends Controller
         return redirect('/{{slug}}/' . $id);
     }
 
-    public function destroy(Request $request, int $id): \Luany\Core\Http\Response
+    public function destroy(Request $request, int $id): Response
     {
         ${{item}} = {{Model}}::find($id);
 

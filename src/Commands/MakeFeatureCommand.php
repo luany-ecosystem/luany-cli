@@ -70,6 +70,7 @@ class MakeFeatureCommand extends BaseCommand
             'index_rows'        => FieldParser::toIndexRows($fields, $item),
             'fillable_keys'     => FieldParser::toFillableKeys($fields),
             'edit_fields'       => FieldParser::toEditFields($fields, $item),
+            'validation_rules'  => FieldParser::toValidationRules($fields),
         ];
 
         echo "\n  \033[33m→\033[0m  Creating feature [\033[36m{$model}\033[0m]...\n\n";
@@ -200,38 +201,30 @@ class MakeFeatureCommand extends BaseCommand
 
     private function appendRoutes(string $base, array $v): void
     {
-        $routesFile = "{$base}/routes/http.php";
+        $routesDir  = "{$base}/routes";
+        $routesFile = "{$routesDir}/{$v['slug']}.php";
 
-        if (!file_exists($routesFile)) {
-            echo "  \033[33m⚠ \033[0m  routes/http.php not found — routes skipped.\n";
+        if (!is_dir($routesDir)) {
+            mkdir($routesDir, 0755, true);
+        }
+
+        // If a dedicated routes file for this feature already exists, skip
+        if (file_exists($routesFile)) {
+            echo "  \033[33m⚠ \033[0m  Routes file already exists — skipped.\n";
             return;
         }
 
-        $content      = file_get_contents($routesFile);
         $useStatement = "use App\\Controllers\\{$v['Model']}Controller;";
+        $block  = "<?php\n\n";
+        $block .= "use Luany\\Core\\Routing\\Route;\n";
+        $block .= "{$useStatement}\n\n";
+        $block .= "// ── {$v['Models']} " . str_repeat('─', 67) . "\n";
+        $block .= "Route::resource('{$v['slug']}', {$v['Model']}Controller::class);\n";
 
-        // Inject use statement after the last existing use statement
-        if (!str_contains($content, $useStatement)) {
-            preg_match_all('/^use .+;$/m', $content, $matches, PREG_OFFSET_CAPTURE);
-            if (!empty($matches[0])) {
-                $last      = end($matches[0]);
-                $insertPos = $last[1] + strlen($last[0]);
-                $content   = substr($content, 0, $insertPos)
-                    . "\n" . $useStatement
-                    . substr($content, $insertPos);
-            }
-        }
-
-        // Append routes block only if not already present
-        if (!preg_match("/Route::resource\(['\"]{$v['slug']}['\"]/", $content)) {
-            $block  = "\n// ── {$v['Models']} " . str_repeat('─', 67) . "\n";
-            $block .= "Route::resource('{$v['slug']}', {$v['Model']}Controller::class);\n";
-            $content = rtrim($content) . "\n" . $block;
-        }
-
-        file_put_contents($routesFile, $content);
-        echo "  \033[32m✓\033[0m  Routes appended:    routes/http.php\n";
+        file_put_contents($routesFile, $block);
+        echo "  \033[32m✓\033[0m  Routes created:     routes/{$v['slug']}.php\n";
     }
+
 
     // ── Interactive ───────────────────────────────────────────────────────────
 

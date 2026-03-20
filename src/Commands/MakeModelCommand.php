@@ -65,6 +65,11 @@ class {$name} extends Model
     protected array \$hidden = [
         // 'password',
     ];
+
+    // ── Relations ─────────────────────────────────────────────────────────────
+    // public function posts(): array { return \$this->hasMany(Post::class); }
+    // public function profile(): ?object { return \$this->hasOne(Profile::class); }
+    // public function role(): ?object { return \$this->belongsTo(Role::class); }
 }
 PHP;
     }
