@@ -40,9 +40,9 @@ class RouteListCommand extends BaseCommand
         require_once $autoload;
 
         // Load routes file
-        $routesFile = $base . '/routes/http.php';
-        if (!file_exists($routesFile)) {
-            echo "\n  \033[33m→\033[0m  No routes file found at routes/http.php\n\n";
+        $routesDir = $base . '/routes';
+        if (!is_dir($routesDir)) {
+            echo "\n  \033[33m→\033[0m  No routes directory found.\n\n";
             return;
         }
 
@@ -55,10 +55,19 @@ class RouteListCommand extends BaseCommand
         // Reset route state before loading
         \Luany\Core\Routing\Route::reset();
 
-        // Suppress any output from the routes file itself
-        ob_start();
-        require $routesFile;
-        ob_end_clean();
+        // Load http.php first, then all other *.php files alphabetically
+        $files = glob($routesDir . '/*.php') ?: [];
+        usort($files, function (string $a, string $b): int {
+            if (basename($a) === 'http.php') return -1;
+            if (basename($b) === 'http.php') return 1;
+            return strcmp($a, $b);
+        });
+
+        foreach ($files as $file) {
+            ob_start();
+            require $file;
+            ob_end_clean();
+        }
 
         $routes = \Luany\Core\Routing\Route::getRoutes();
 
