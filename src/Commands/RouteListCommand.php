@@ -26,6 +26,7 @@ class RouteListCommand extends BaseCommand
         return 'List all registered application routes';
     }
 
+    /** @param array<int, string> $args */
     public function handle(array $args): void
     {
         $base = Env::basePath();
@@ -99,6 +100,7 @@ class RouteListCommand extends BaseCommand
            . str_repeat('─', $nw) . "\n";
     }
 
+    /** @param array<string, mixed> $route */
     private function printRoute(array $route, int $mw, int $uw, int $aw, int $nw): void
     {
         $methods = $this->formatMethods($route);
@@ -120,6 +122,7 @@ class RouteListCommand extends BaseCommand
            . str_pad($name, $nw) . "\n";
     }
 
+    /** @param array<string, mixed> $route */
     private function formatMethods(array $route): string
     {
         $methods = $route['methods'] ?? ($route['method'] ?? ['GET']);
@@ -129,6 +132,7 @@ class RouteListCommand extends BaseCommand
         return implode('|', array_map('strtoupper', $methods));
     }
 
+    /** @param array<string, mixed> $route */
     private function formatAction(array $route): string
     {
         $action = $route['action'] ?? ($route['controller'] ?? '');

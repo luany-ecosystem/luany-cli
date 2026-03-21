@@ -27,6 +27,7 @@ use LuanyCli\Commands\NewCommand;
 
 class Application
 {
+    /** @param array<int, string> $argv */
     public static function run(array $argv): void
     {
         $registry = new CommandRegistry();
@@ -63,7 +64,7 @@ class Application
      */
     private static function assertInsideLuanyProject(): void
     {
-        $base = BASE_DIR;
+        $base = BASE_DIR; // @phpstan-ignore constant.notFound
 
         if (!ProjectFinder::isLuanyProject($base)) {
             fwrite(STDERR, "\n  \033[31m✗\033[0m  This command must be run inside a Luany project.\n\n");

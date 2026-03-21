@@ -17,6 +17,7 @@ class ServeCommand extends BaseCommand
         return 'Start the built-in PHP development server';
     }
 
+    /** @param array<int, string> $args */
     public function handle(array $args): void
     {
         $host = $args[0] ?? 'localhost';

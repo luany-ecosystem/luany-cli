@@ -23,6 +23,7 @@ class DoctorCommand extends BaseCommand
         return false;
     }
 
+    /** @param array<int, string> $args */
     public function handle(array $args): void
     {
         echo "\n  \033[33mLuany Environment Check\033[0m\n";

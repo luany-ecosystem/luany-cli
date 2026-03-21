@@ -16,6 +16,7 @@ class MigrateRollbackCommand extends MigrateBaseCommand
         return 'Rollback the last migration batch';
     }
 
+    /** @param array<int, string> $args */
     public function handle(array $args): void
     {
         echo "\n";

@@ -21,6 +21,7 @@ class NewCommand extends BaseCommand
         return false;
     }
 
+    /** @param array<int, string> $args */
     public function handle(array $args): void
     {
         $name = $args[0] ?? null;

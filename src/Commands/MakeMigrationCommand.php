@@ -17,6 +17,7 @@ class MakeMigrationCommand extends BaseCommand
         return 'Generate a timestamped migration file';
     }
 
+    /** @param array<int, string> $args */
     public function handle(array $args): void
     {
         $name = $args[0] ?? null;

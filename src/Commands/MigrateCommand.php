@@ -16,6 +16,7 @@ class MigrateCommand extends MigrateBaseCommand
         return 'Run all pending migrations';
     }
 
+    /** @param array<int, string> $args */
     public function handle(array $args): void
     {
         echo "\n";

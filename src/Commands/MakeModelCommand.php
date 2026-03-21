@@ -17,6 +17,7 @@ class MakeModelCommand extends BaseCommand
         return 'Scaffold a new model';
     }
 
+    /** @param array<int, string> $args */
     public function handle(array $args): void
     {
         $name = $args[0] ?? null;

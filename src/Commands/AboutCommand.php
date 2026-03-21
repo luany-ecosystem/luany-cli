@@ -22,6 +22,7 @@ class AboutCommand extends BaseCommand
         return 'Display information about the current project';
     }
 
+    /** @param array<int, string> $args */
     public function handle(array $args): void
     {
         $env         = $this->readEnv();
@@ -51,6 +52,7 @@ class AboutCommand extends BaseCommand
         echo "\n";
     }
 
+    /** @return array<string, string> */
     private function readEnv(): array
     {
         $file = Env::basePath() . '/.env';

@@ -24,6 +24,7 @@ class ListCommand extends BaseCommand
         return 'List all available commands';
     }
 
+    /** @param array<int, string> $args */
     public function handle(array $args): void
     {
         echo "\n  \033[32mUsage:\033[0m   luany <command> [arguments]\n\n";

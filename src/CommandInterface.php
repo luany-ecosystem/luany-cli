@@ -18,6 +18,7 @@ interface CommandInterface
     /**
      * Execute the command.
      */
+    /** @param array<int, string> $args */
     public function handle(array $args): void;
 
     /**

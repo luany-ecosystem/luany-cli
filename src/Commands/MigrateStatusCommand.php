@@ -16,6 +16,7 @@ class MigrateStatusCommand extends MigrateBaseCommand
         return 'Show the status of all migrations';
     }
 
+    /** @param array<int, string> $args */
     public function handle(array $args): void
     {
         $runner = new MigrationRunner($this->pdo(), $this->migrationPath());

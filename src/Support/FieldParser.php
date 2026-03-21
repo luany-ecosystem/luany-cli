@@ -130,6 +130,7 @@ class FieldParser
     }
 
     // Novo â€” toEditFields com values preenchidos
+    /** @param array<int, array{name: string, type: string}> $fields */
     public static function toEditFields(array $fields, string $item): string
     {
         if (empty($fields)) {
@@ -167,6 +168,7 @@ class FieldParser
     }
 
     // Novo â€” toValidationRules
+    /** @param array<int, array{name: string, type: string}> $fields */
     public static function toValidationRules(array $fields): string
     {
         if (empty($fields)) {
@@ -240,6 +242,7 @@ class FieldParser
         ));
     }
 
+    /** @param array<int, array{name: string, type: string}> $fields */
     public static function toFillableKeys(array $fields): string
     {
         if (empty($fields)) return '';

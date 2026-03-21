@@ -1,0 +1,13 @@
+parameters:
+    level: 6
+    paths:
+        - src
+    bootstrapFiles:
+        - vendor/autoload.php
+    treatPhpDocTypesAsCertain: false
+    ignoreErrors:
+        # MigrateCommand, MigrateFreshCommand, MigrateRollbackCommand, MigrateStatusCommand
+        # reference MigrationRunner from luany/database. The CLI is a global tool that
+        # loads the project's own autoloader at runtime (vendor/autoload.php of the project).
+        # PHPStan cannot see that runtime dependency — this is the correct architectural design.
+        - '#Luany\\Database\\Migration\\MigrationRunner#'

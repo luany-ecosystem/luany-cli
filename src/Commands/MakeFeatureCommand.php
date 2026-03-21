@@ -19,6 +19,7 @@ class MakeFeatureCommand extends BaseCommand
         return 'Scaffold a complete feature (model, controller, migration, views, routes)';
     }
 
+    /** @param array<int, string> $args */
     public function handle(array $args): void
     {
         $name = $args[0] ?? null;
@@ -87,6 +88,7 @@ class MakeFeatureCommand extends BaseCommand
 
     // ── Generators ────────────────────────────────────────────────────────────
 
+    /** @param array<string, string> $v */
     private function generateModel(StubRenderer $r, string $base, string $stubs, array $v): void
     {
         $path = "{$base}/app/Models/{$v['Model']}.php";
@@ -118,6 +120,7 @@ class MakeFeatureCommand extends BaseCommand
         echo "  \033[32m✓\033[0m  Model created:      app/Models/{$v['Model']}.php\n";
     }
 
+    /** @param array<string, string> $v */
     private function generateController(StubRenderer $r, string $base, string $stubs, array $v): void
     {
         $dir = "{$base}/app/Controllers";
@@ -146,6 +149,7 @@ class MakeFeatureCommand extends BaseCommand
         echo "  \033[32m✓\033[0m  Controller created: app/Controllers/{$v['Model']}Controller.php\n";
     }
 
+    /** @param array<string, string> $v */
     private function generateMigration(StubRenderer $r, string $base, string $stubs, array $v): void
     {
         $dir  = "{$base}/database/migrations";
@@ -169,6 +173,7 @@ class MakeFeatureCommand extends BaseCommand
         echo "  \033[32m✓\033[0m  Migration created:  database/migrations/{$file}\n";
     }
 
+    /** @param array<string, string> $v */
     private function generateViews(StubRenderer $r, string $base, string $stubs, array $v): void
     {
         $dir = "{$base}/views/pages/{$v['slug']}";
@@ -199,6 +204,7 @@ class MakeFeatureCommand extends BaseCommand
         }
     }
 
+    /** @param array<string, string> $v */
     private function appendRoutes(string $base, array $v): void
     {
         $routesDir  = "{$base}/routes";
@@ -322,6 +328,10 @@ class MakeFeatureCommand extends BaseCommand
         return $word . 's';
     }
 
+    /**
+     * @param array<int, string> $args
+     * @return array<int, array{name: string, type: string}>
+     */
     private function parseInlineFields(array $args): array
     {
         $fields = [];
@@ -342,6 +352,7 @@ class MakeFeatureCommand extends BaseCommand
         return $fields;
     }
 
+    /** @param array<string, string> $v */
     private function printRoutes(array $v): void
     {
         echo "  \033[33mRoutes available:\033[0m\n";

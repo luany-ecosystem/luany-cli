@@ -4,6 +4,7 @@ namespace LuanyCli;
 
 class CommandRegistry
 {
+    /** @var array<string, CommandInterface> */
     private array $commands = [];
 
     public function register(CommandInterface $command): void
@@ -16,6 +17,7 @@ class CommandRegistry
         return $this->commands[$name] ?? null;
     }
 
+    /** @return array<string, CommandInterface> */
     public function all(): array
     {
         return $this->commands;

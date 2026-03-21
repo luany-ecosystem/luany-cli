@@ -16,6 +16,7 @@ class MigrateFreshCommand extends MigrateBaseCommand
         return 'Drop all tables and re-run all migrations';
     }
 
+    /** @param array<int, string> $args */
     public function handle(array $args): void
     {
         echo "\n  \033[33m⚠\033[0m  This will drop all tables. Continue? [yes/no]: ";
