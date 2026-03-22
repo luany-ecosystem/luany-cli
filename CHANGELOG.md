@@ -6,7 +6,7 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
-## [Unreleased] — next/v1
+## [1.0.0] — 2026-03-22
 
 ### Added
 - `make:request` — scaffold a form request validation class in `app/Http/Requests/`. Generated class wraps `Validator::make()` with `rules()`, `data()`, `passes()`, `fails()`, `validated()`, `errors()`. Supports subdirectory notation (`Auth/LoginRequest`).
