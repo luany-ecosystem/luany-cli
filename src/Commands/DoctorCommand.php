@@ -31,7 +31,7 @@ class DoctorCommand extends BaseCommand
 
         // ── Global checks ─────────────────────────────────────────────────────
 
-        $this->check('PHP version', PHP_VERSION, version_compare(PHP_VERSION, '8.1.0', '>='));
+        $this->check('PHP version', PHP_VERSION, version_compare(PHP_VERSION, '8.2.0', '>='));
         $this->checkExtension('pdo');
         $this->checkExtension('pdo_mysql');
         $this->checkExtension('mbstring');

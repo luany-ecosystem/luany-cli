@@ -38,6 +38,7 @@ class {{Model}}Controller extends Controller
         ], '/{{slug}}/create');
 
         {{Model}}::create($data);
+        flash('success', '{{Model}} created successfully.');
 
         return redirect('/{{slug}}');
     }
@@ -70,6 +71,7 @@ class {{Model}}Controller extends Controller
         }
 
         ${{item}}->save();
+        flash('success', '{{Model}} updated successfully.');
 
         return redirect('/{{slug}}/' . $id);
     }
@@ -83,6 +85,7 @@ class {{Model}}Controller extends Controller
         }
 
         ${{item}}->delete();
+        flash('success', '{{Model}} deleted successfully.');
 
         return redirect('/{{slug}}');
     }
