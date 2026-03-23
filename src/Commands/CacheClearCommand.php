@@ -17,6 +17,7 @@ class CacheClearCommand extends BaseCommand
         return 'Clear compiled view cache';
     }
 
+    /** @param array<int, string> $args */
     public function handle(array $args): void
     {
         $path  = Env::basePath() . '/storage/cache/views';

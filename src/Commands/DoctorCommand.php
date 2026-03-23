@@ -23,6 +23,7 @@ class DoctorCommand extends BaseCommand
         return false;
     }
 
+    /** @param array<int, string> $args */
     public function handle(array $args): void
     {
         echo "\n  \033[33mLuany Environment Check\033[0m\n";
@@ -30,7 +31,7 @@ class DoctorCommand extends BaseCommand
 
         // ── Global checks ─────────────────────────────────────────────────────
 
-        $this->check('PHP version', PHP_VERSION, version_compare(PHP_VERSION, '8.1.0', '>='));
+        $this->check('PHP version', PHP_VERSION, version_compare(PHP_VERSION, '8.2.0', '>='));
         $this->checkExtension('pdo');
         $this->checkExtension('pdo_mysql');
         $this->checkExtension('mbstring');

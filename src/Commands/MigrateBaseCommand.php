@@ -49,6 +49,7 @@ abstract class MigrateBaseCommand extends BaseCommand
      * Parse .env manually — parse_ini_file() chokes on values that
      * contain '=' (e.g. base64 APP_KEY) or '(' characters.
      */
+    /** @return array<string, string> */
     protected function loadEnv(): array
     {
         $file = Env::basePath() . '/.env';

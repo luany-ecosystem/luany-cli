@@ -17,6 +17,7 @@ class MakeControllerCommand extends BaseCommand
         return 'Scaffold a new controller';
     }
 
+    /** @param array<int, string> $args */
     public function handle(array $args): void
     {
         $name = $args[0] ?? null;
@@ -58,6 +59,7 @@ class MakeControllerCommand extends BaseCommand
 namespace {$namespace};
 
 use Luany\Core\Http\Request;
+use Luany\Core\Http\Response;
 
 class {$name} extends Controller
 {

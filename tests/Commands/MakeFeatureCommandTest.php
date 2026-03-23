@@ -18,10 +18,8 @@ class MakeFeatureCommandTest extends TestCase
         mkdir($this->baseDir . '/routes',           0755, true);
 
         file_put_contents($this->baseDir . '/views/layouts/main.lte', '');
-        file_put_contents(
-            $this->baseDir . '/routes/http.php',
-            "<?php\n\nuse Luany\\Core\\Routing\\Route;\nuse App\\Controllers\\HomeController;\n\nRoute::get('/', [HomeController::class, 'index']);\n"
-        );
+        // routes/ directory is created by make:feature automatically
+        // No need to pre-create routes/http.php — each feature gets its own routes file
 
         Env::setBasePath($this->baseDir);
     }
@@ -125,13 +123,17 @@ class MakeFeatureCommandTest extends TestCase
         $this->assertStringContainsString("@extends('layouts.main')", $index);
     }
 
-    public function test_appends_routes(): void
+    public function test_creates_routes_file(): void
     {
         ob_start();
         $this->makeCommand()->handle(['Post']);
         ob_end_clean();
 
-        $routes = file_get_contents($this->baseDir . '/routes/http.php');
+        // Each feature generates its own routes file
+        $routesFile = $this->baseDir . '/routes/posts.php';
+        $this->assertFileExists($routesFile);
+
+        $routes = file_get_contents($routesFile);
         $this->assertStringContainsString("Route::resource('posts'", $routes);
         $this->assertStringContainsString('PostController::class', $routes);
         $this->assertStringContainsString('use App\Controllers\PostController;', $routes);
@@ -258,7 +260,10 @@ class MakeFeatureCommandTest extends TestCase
         $this->makeCommand()->handle(['Post']);
         ob_end_clean();
 
-        $routes = file_get_contents($this->baseDir . '/routes/http.php');
+        // The dedicated routes file is not overwritten on second run
+        $routesFile = $this->baseDir . '/routes/posts.php';
+        $this->assertFileExists($routesFile);
+        $routes = file_get_contents($routesFile);
         $this->assertSame(1, substr_count($routes, "Route::resource('posts'"));
     }
 

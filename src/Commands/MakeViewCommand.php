@@ -17,6 +17,7 @@ class MakeViewCommand extends BaseCommand
         return 'Create a new LTE view  (types: page, component, layout)';
     }
 
+    /** @param array<int, string> $args */
     public function handle(array $args): void
     {
         $name = $args[0] ?? null;

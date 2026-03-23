@@ -14,7 +14,7 @@
     "keywords": ["php", "cli", "luany", "framework", "scaffold"],
     "homepage": "https://github.com/luany-ecosystem/luany-cli",
     "require": {
-        "php": ">=8.1"
+        "php": ">=8.2"
     },
     "autoload": {
         "psr-4": {
@@ -22,7 +22,8 @@
         }
     },
     "require-dev": {
-        "phpunit/phpunit": "^11.0"
+        "phpunit/phpunit": "^11.0",
+        "phpstan/phpstan": "^2.1"
     },
     "autoload-dev": {
         "psr-4": {

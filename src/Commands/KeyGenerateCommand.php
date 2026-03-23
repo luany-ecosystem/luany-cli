@@ -17,6 +17,7 @@ class KeyGenerateCommand extends BaseCommand
         return 'Generate and set APP_KEY in .env';
     }
 
+    /** @param array<int, string> $args */
     public function handle(array $args): void
     {
         $envFile = Env::basePath() . '/.env';

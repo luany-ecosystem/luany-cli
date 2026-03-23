@@ -17,6 +17,7 @@ class MakeModelCommand extends BaseCommand
         return 'Scaffold a new model';
     }
 
+    /** @param array<int, string> $args */
     public function handle(array $args): void
     {
         $name = $args[0] ?? null;
@@ -65,6 +66,11 @@ class {$name} extends Model
     protected array \$hidden = [
         // 'password',
     ];
+
+    // ── Relations ─────────────────────────────────────────────────────────────
+    // public function posts(): array { return \$this->hasMany(Post::class); }
+    // public function profile(): ?object { return \$this->hasOne(Profile::class); }
+    // public function role(): ?object { return \$this->belongsTo(Role::class); }
 }
 PHP;
     }

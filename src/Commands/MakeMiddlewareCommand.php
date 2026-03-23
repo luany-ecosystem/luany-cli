@@ -17,6 +17,7 @@ class MakeMiddlewareCommand extends BaseCommand
         return 'Scaffold a new middleware';
     }
 
+    /** @param array<int, string> $args */
     public function handle(array $args): void
     {
         $name = $args[0] ?? null;
