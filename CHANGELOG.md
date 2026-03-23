@@ -26,7 +26,7 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
-## [0.2.2] — Phase 5 / Phase 6 baseline
+## [0.2.1] — Phase 5 / Phase 6 baseline
 
 ### Added
 - `make:feature` — interactive CRUD scaffold. Generates model, controller, migration, 4 LTE views (index, show, create, edit), and route registration. Supports inline field definitions (`name:string price:decimal`) to skip prompts.
