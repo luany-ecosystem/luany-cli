@@ -1,6 +1,6 @@
 @extends('{{layout}}')
 
-@section('title'){{Model}} List@endsection
+@section('title', '{{Model}} List')
 
 @style
     .{{slug}}-wrap { max-width: 1100px; margin: 0 auto; padding: var(--space-8) var(--space-6); }
