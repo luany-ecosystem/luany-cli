@@ -6,6 +6,34 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.0.2] — 2026-03-28
+
+### Added
+- `dev` — start the Luany Dev Engine (LDE v1): PHP built-in server + Node.js file watcher with WebSocket live reload. Replaces BrowserSync entirely.
+  - `src/Commands/DevCommand.php` — `luany dev` command. Validates `APP_ENV=development`, prints banner with correct WebSocket port, delegates to `ProcessManager`.
+  - `src/Dev/NodeRunner.php` — spawns and validates the Node.js watcher process. Verifies `node` binary, `chokidar`, `ws` packages, and `watcher.js` script.
+  - `src/Dev/ProcessManager.php` — orchestrates PHP server + Node watcher via `proc_open()`. Tick loop detects unexpected child exits. Clean shutdown on `SIGINT`/`SIGTERM` with cascade kill (SIGTERM → SIGKILL).
+  - `src/Resources/dev/watcher.js` — Chokidar watcher + WebSocket server (port 35729). Debounce 40ms. Strategy: CSS → `inject-css`, `.lte`/`.php`/`.js`/`routes/`/`config/` → `reload`. Ignores `node_modules`, `vendor`, `storage/cache`, `storage/logs`.
+  - `src/Resources/dev/client.js` — browser WebSocket client. Injected via `DevMiddleware`. CSS inject updates `<link>` href with cache-buster. Full reload for PHP/LTE/JS changes. Exponential back-off reconnect. Reads WebSocket port from `window.__LDE_WS_PORT__`.
+
+### Changed
+- Development architecture: removed BrowserSync proxy layer. Browser connects directly to PHP server; WebSocket carries only reload signals — eliminates request loops, port conflicts, and session state corruption.
+
+### Fixed
+- `NodeRunner::spawn()` — command passed as array instead of string, preventing failures on paths with spaces or special characters.
+- `NodeRunner::spawn()` — environment variable propagation to Node child process now uses `getenv()` as fallback when `$_ENV` is empty (common with restrictive `variables_order` in `php.ini`).
+- `NodeRunner::spawn()` — removed redundant `is_array()` guard on `$pipes`; with inherited STDIN/STDOUT/STDERR descriptors `$pipes` is always `[]`.
+- `ProcessManager::kill()` — fresh `proc_get_status()` call after `usleep()` before SIGKILL, preventing stale status from blocking force-termination.
+- `ProcessManager::kill()` — added `@param-out null $process` annotation to satisfy PHPStan by-ref type narrowing.
+- `ProcessManager::isAlive()` and `kill()` — removed `!== false` checks on `proc_get_status()` return value; PHPStan level 6 confirms the function always returns array.
+- `DevCommand::printBanner()` — WebSocket port in banner now reflects the actual `$wsPort` argument instead of always showing `35729`.
+- `phpstan.neon` — added `reportUnmatchedIgnoredErrors: false` to prevent CI failures when `pcntl_*` ignore patterns are unmatched on Windows environments.
+
+## [1.0.1] — 2026-03-23
+
+### Changed
+fix: update view stubs to use consistent @section inline syntax
+
 ## [1.0.0] — 2026-03-23
 
 ### Added

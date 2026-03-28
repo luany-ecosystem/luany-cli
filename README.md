@@ -66,6 +66,7 @@ luany <command> [arguments]
 | Command                                      | Description                                                               |
 | -------------------------------------------- | ------------------------------------------------------------------------- |
 | `serve`                                      | Start the built-in PHP development server                                 |
+| `dev`                                        | Start the Luany Dev Engine (LDE) with live reload                         |
 | `make:controller <Name>`                     | Scaffold a new controller                                                 |
 | `make:model <Name>`                          | Scaffold a new model                                                      |
 | `make:migration <name>`                      | Generate a timestamped migration file                                     |
@@ -131,6 +132,67 @@ Project Health
 ✓  database connection           ok
 ✓  _migrations table             found
 ```
+
+## luany dev
+
+```bash
+luany dev
+luany dev localhost 8080          # custom host/port
+luany dev localhost 8000 35730    # custom WebSocket port
+```
+
+Starts the **Luany Dev Engine (LDE)** — the integrated development server with live reload.
+
+**Requirements:**
+- PHP 8.2+
+- Node.js installed and available in PATH
+- `npm install` run in project root
+- `APP_ENV=development` in `.env`
+
+**What it does:**
+- Starts PHP built-in server (default: 8000)
+- Starts Node.js watcher + WebSocket server (default: 35729)
+- Injects a lightweight client into HTML responses (via DevMiddleware)
+- Watches project files and triggers browser updates
+
+**Reload strategy:**
+- `.css` → injected live (no full reload)
+- `.lte`, `.php`, `.js`, `routes/`, `config/` → full page reload
+
+**Ignored paths:**
+- `node_modules/`
+- `vendor/`
+- `storage/cache/`
+- `storage/logs/`
+
+**Architecture:**
+- No proxy layer (unlike BrowserSync)
+- Browser connects directly to PHP server
+- WebSocket is used only for reload signals
+
+## How LDE works
+
+The Luany Dev Engine (LDE) is composed of two processes:
+
+1. **PHP Server**
+   - Serves the application on `http://localhost:8000`
+   - Injects the live-reload client into HTML responses via `DevMiddleware`
+
+2. **Node.js Watcher**
+   - Watches filesystem changes using `chokidar`
+   - Runs a WebSocket server (default: 35729)
+   - Broadcasts reload events to connected browsers
+
+**Flow:**
+file change → watcher detects → debounce (40ms)
+→ broadcast via WebSocket → browser reloads
+
+**Browser client:**
+- Auto-reconnect with exponential backoff
+- CSS hot injection (cache-busting)
+- Full reload fallback
+
+**Note:** `luany serve` continues to work as a plain PHP server without live reload. Use `luany dev` for active development.
 
 ## Subdirectory support
 
@@ -301,7 +363,8 @@ vendor/bin/phpunit --testdox
 ```
 
 ```
-OK (159 tests, 212 assertions)
+OK, but some tests were skipped!
+Tests: 176, Assertions: 236, Skipped: 1.
 ```
 
 ## Notes on recent improvements
@@ -320,6 +383,31 @@ OK (159 tests, 212 assertions)
 
 - `FieldParser` applies `required` + `placeholder` to generated form fields (`toFormFields`) and `placeholder` to edit fields (`toEditFields`, without required).
 - `.env` parsing centralized via `Support\EnvParser`, used by `MigrateBaseCommand` and `DoctorCommand` for reliability with quoted values, base64, and `=` in values.
+
+## Common Issues
+
+### Command not found (`luany`)
+
+- Ensure Composer global bin directory is in your `PATH`
+- Restart your terminal after installation
+
+### Project not detected
+
+- Ensure `composer.json` includes `luany/framework` or `luany/core`
+- Run `composer install` if dependencies are missing
+
+### Migrations not running
+
+- Check database configuration in `.env`
+- Ensure database server is running
+- Run `luany doctor` to verify connection
+
+### Live reload not working
+
+- `APP_ENV=development` in `.env`
+- Node.js installed (`node -v`)
+- Run `npm install`
+- WebSocket port (default `35729`) not in use
 
 ## License
 

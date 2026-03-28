@@ -34,7 +34,7 @@ class RouteListCommand extends BaseCommand
         // Load project autoload so Route class is available
         $autoload = $base . '/vendor/autoload.php';
         if (!file_exists($autoload)) {
-            fwrite(STDERR, "\n  \033[31m✗\033[0m  vendor/autoload.php not found. Run: composer install\n\n");
+            echo "\n  \033[31m✗\033[0m  vendor/autoload.php not found. Run: composer install\n\n";
             return;
         }
         require_once $autoload;
@@ -48,7 +48,7 @@ class RouteListCommand extends BaseCommand
 
         // Guard: Route class must exist
         if (!class_exists(\Luany\Core\Routing\Route::class)) {
-            fwrite(STDERR, "\n  \033[31m✗\033[0m  Luany\\Core\\Routing\\Route not found in vendor.\n\n");
+            echo "\n  \033[31m✗\033[0m  Luany\\Core\\Routing\\Route not found in vendor.\n\n";
             return;
         }
 
