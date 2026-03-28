@@ -1,7 +1,6 @@
 <?php
 
 namespace LuanyCli\Dev;
-use LuanyCli\Env;
 
 /**
  * NodeRunner
@@ -12,7 +11,7 @@ use LuanyCli\Env;
  *   - Verify Node.js is available on PATH
  *   - Verify node_modules/chokidar and node_modules/ws are installed
  *   - Spawn watcher.js as a background child process via proc_open()
- *   - Provide the process handle and pipes to ProcessManager
+ *   - Provide the process handle to ProcessManager
  *
  * Design notes:
  *   proc_open() is used instead of shell_exec() or passthru() because it
@@ -21,6 +20,9 @@ use LuanyCli\Env;
  *
  *   stdout/stderr from the Node process are inherited (STDIO descriptors),
  *   so [LDE] log lines appear directly in the terminal alongside PHP output.
+ *
+ *   With inherited STDIN/STDOUT/STDERR descriptors, proc_open() sets $pipes
+ *   to an empty array — there are no pipe resources to manage.
  */
 class NodeRunner
 {
@@ -58,6 +60,10 @@ class NodeRunner
     public function spawn(string $projectRoot, int $wsPort = 35729)
     {
         $node = $this->findNode();
+
+        // Array form — bypasses the shell entirely. Safe for paths with
+        // spaces or special characters. Supported since PHP 7.4 on all
+        // platforms (including Windows via proc_open internals).
         $cmd = [
             $node,
             $this->watcherScript,
@@ -65,8 +71,12 @@ class NodeRunner
             (string) $wsPort,
         ];
 
+        // getenv() is used as fallback when $_ENV is empty — this happens
+        // when php.ini variables_order does not include 'E' (common in
+        // some Windows/WAMP setups). Without this, the Node child process
+        // would inherit zero environment variables (no PATH, no HOME).
         $currentEnv = !empty($_ENV) ? $_ENV : (getenv() ?: []);
-        $env = array_merge($currentEnv, [
+        $env        = array_merge($currentEnv, [
             'NODE_PATH' => $projectRoot . '/node_modules',
         ]);
 
@@ -76,13 +86,11 @@ class NodeRunner
             2 => STDERR,
         ];
 
+        // With inherited descriptors, proc_open() sets $pipes to [].
+        // There are no pipe resources to close — the variable is declared
+        // by reference but intentionally unused after this call.
+        $pipes   = [];
         $process = proc_open($cmd, $descriptors, $pipes, $projectRoot, $env);
-
-        if (is_array($pipes)) {
-            foreach ($pipes as $pipe) {
-                fclose($pipe);
-            }
-        }
 
         if ($process === false) {
             throw new \RuntimeException(
@@ -104,7 +112,9 @@ class NodeRunner
             $where = @shell_exec('where ' . escapeshellarg($candidate) . ' 2>nul');
             if ($where !== null && trim($where) !== '') {
                 $lines = preg_split('/\r\n|\r|\n/', trim($where));
-                return trim($lines[0]);
+                if ($lines !== false && isset($lines[0])) {
+                    return trim($lines[0]);
+                }
             }
 
             // ── UNIX (Linux/macOS) ───────────────────────────────
@@ -120,7 +130,7 @@ class NodeRunner
         );
     }
 
-    // ── Private assertions ────────────────────────────────────────────────────
+    // ── Assertions ────────────────────────────────────────────────────────────
 
     public function assertNodeAvailable(): void
     {

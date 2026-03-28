@@ -22,9 +22,12 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 ### Fixed
 - `NodeRunner::spawn()` — command passed as array instead of string, preventing failures on paths with spaces or special characters.
 - `NodeRunner::spawn()` — environment variable propagation to Node child process now uses `getenv()` as fallback when `$_ENV` is empty (common with restrictive `variables_order` in `php.ini`).
+- `NodeRunner::spawn()` — removed redundant `is_array()` guard on `$pipes`; with inherited STDIN/STDOUT/STDERR descriptors `$pipes` is always `[]`.
 - `ProcessManager::kill()` — fresh `proc_get_status()` call after `usleep()` before SIGKILL, preventing stale status from blocking force-termination.
+- `ProcessManager::kill()` — added `@param-out null $process` annotation to satisfy PHPStan by-ref type narrowing.
+- `ProcessManager::isAlive()` and `kill()` — removed `!== false` checks on `proc_get_status()` return value; PHPStan level 6 confirms the function always returns array.
 - `DevCommand::printBanner()` — WebSocket port in banner now reflects the actual `$wsPort` argument instead of always showing `35729`.
-- `watcher.js` — added `routes/**/*.php` and `config/**/*.php` to watched paths.
+- `phpstan.neon` — added `reportUnmatchedIgnoredErrors: false` to prevent CI failures when `pcntl_*` ignore patterns are unmatched on Windows environments.
 
 ## [1.0.1] — 2026-03-23
 

@@ -5,6 +5,7 @@ parameters:
     bootstrapFiles:
         - vendor/autoload.php
     treatPhpDocTypesAsCertain: false
+    reportUnmatchedIgnoredErrors: false
     ignoreErrors:
         # MigrateCommand, MigrateFreshCommand, MigrateRollbackCommand, MigrateStatusCommand
         # reference MigrationRunner from luany/database. The CLI is a global tool that
@@ -13,10 +14,10 @@ parameters:
         - '#Luany\\Database\\Migration\\MigrationRunner#'
 
         # ProcessManager uses pcntl_signal / pcntl_async_signals / pcntl_signal_dispatch
-        # guarded by function_exists() — pcntl is a CLI-only extension not declared in
-        # the CI PHP setup. PHPStan cannot resolve these at static analysis time.
-        # At runtime (Linux/macOS) they are available; Windows falls back to
-        # register_shutdown_function() which is always available.
+        # guarded by function_exists() — pcntl is a CLI-only extension not available on
+        # Windows or in some CI environments. PHPStan cannot resolve these at static
+        # analysis time. At runtime (Linux/macOS) they are available; Windows falls back
+        # to register_shutdown_function() which is always available.
         - '#Call to an undefined function pcntl_signal\(\)#'
         - '#Call to an undefined function pcntl_async_signals\(\)#'
         - '#Call to an undefined function pcntl_signal_dispatch\(\)#'

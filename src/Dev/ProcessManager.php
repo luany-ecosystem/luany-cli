@@ -206,7 +206,7 @@ class ProcessManager
             return false;
         }
         $status = proc_get_status($process);
-        return $status !== false && $status['running'] === true;
+        return $status['running'] === true;
     }
 
     /**
@@ -218,7 +218,8 @@ class ProcessManager
      *   2. Wait 200ms.
      *   3. Fresh proc_get_status() — if still running, SIGKILL.
      *
-     * @param resource|null $process
+     * @param  resource|null $process
+     * @param-out null        $process
      */
     private function kill(&$process, string $label): void
     {
@@ -228,7 +229,7 @@ class ProcessManager
 
         $status = proc_get_status($process);
 
-        if ($status !== false && $status['running']) {
+        if ($status['running']) {
             if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
                 exec("taskkill /F /T /PID {$status['pid']}");
             } else {
@@ -240,7 +241,7 @@ class ProcessManager
 
             // Fresh status check — the previous $status is stale after sleep.
             $freshStatus = proc_get_status($process);
-            if ($freshStatus !== false && $freshStatus['running']) {
+            if ($freshStatus['running']) {
                 proc_terminate($process, 9); // SIGKILL
             }
         }
