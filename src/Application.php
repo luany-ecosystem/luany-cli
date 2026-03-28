@@ -4,9 +4,12 @@ namespace LuanyCli;
 
 use LuanyCli\Commands\AboutCommand;
 use LuanyCli\Commands\CacheClearCommand;
+use LuanyCli\Commands\DevCommand;
+use LuanyCli\Commands\DoctorCommand;
 use LuanyCli\Commands\KeyGenerateCommand;
 use LuanyCli\Commands\ListCommand;
 use LuanyCli\Commands\MakeControllerCommand;
+use LuanyCli\Commands\MakeFeatureCommand;
 use LuanyCli\Commands\MakeMiddlewareCommand;
 use LuanyCli\Commands\MakeMigrationCommand;
 use LuanyCli\Commands\MakeModelCommand;
@@ -18,12 +21,10 @@ use LuanyCli\Commands\MigrateCommand;
 use LuanyCli\Commands\MigrateFreshCommand;
 use LuanyCli\Commands\MigrateRollbackCommand;
 use LuanyCli\Commands\MigrateStatusCommand;
+use LuanyCli\Commands\NewCommand;
 use LuanyCli\Commands\RouteListCommand;
 use LuanyCli\Commands\ServeCommand;
-use LuanyCli\Commands\MakeFeatureCommand;
 use LuanyCli\Support\ProjectFinder;
-use LuanyCli\Commands\DoctorCommand;
-use LuanyCli\Commands\NewCommand;
 
 class Application
 {
@@ -81,6 +82,7 @@ class Application
     private static function registerCommands(CommandRegistry $registry): void
     {
         $registry->register(new ServeCommand());
+        $registry->register(new DevCommand());
         $registry->register(new MakeControllerCommand());
         $registry->register(new MakeModelCommand());
         $registry->register(new MakeMigrationCommand());

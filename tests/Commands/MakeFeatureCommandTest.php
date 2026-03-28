@@ -1,4 +1,6 @@
-﻿<?php
+<?php
+
+namespace LuanyCli\Tests\Commands;
 
 use LuanyCli\Commands\MakeFeatureCommand;
 use LuanyCli\Env;
@@ -30,7 +32,7 @@ class MakeFeatureCommandTest extends TestCase
         $this->removeDir($this->baseDir);
     }
 
-    // â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // -- Helpers ---------------------------------------------------------------
 
     /**
      * Returns a testable command with predefined fields,
@@ -46,7 +48,7 @@ class MakeFeatureCommandTest extends TestCase
         };
     }
 
-    // â”€â”€ Metadata â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // -- Metadata --------------------------------------------------------------
 
     public function test_name_is_make_feature(): void
     {
@@ -65,7 +67,7 @@ class MakeFeatureCommandTest extends TestCase
         $this->assertNotEmpty($this->makeCommand()->description());
     }
 
-    // â”€â”€ File generation without fields â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // -- File generation without fields ----------------------------------------
 
     public function test_generates_model_without_fields(): void
     {
@@ -139,7 +141,7 @@ class MakeFeatureCommandTest extends TestCase
         $this->assertStringContainsString('use App\Controllers\PostController;', $routes);
     }
 
-    // â”€â”€ File generation with fields â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // -- File generation with fields -------------------------------------------
 
     public function test_generates_model_with_fillable_fields(): void
     {
@@ -251,7 +253,7 @@ class MakeFeatureCommandTest extends TestCase
         $this->assertStringContainsString('<th>Body</th>',  $index);
     }
 
-    // â”€â”€ Idempotency â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // -- Idempotency -----------------------------------------------------------
 
     public function test_does_not_duplicate_routes_on_second_run(): void
     {
@@ -284,7 +286,7 @@ class MakeFeatureCommandTest extends TestCase
         $this->assertSame($originalTime, filemtime($path));
     }
 
-    // â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // -- Helpers ---------------------------------------------------------------
 
     private function removeDir(string $dir): void
     {
