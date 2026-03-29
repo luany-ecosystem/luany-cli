@@ -68,6 +68,8 @@ class ProcessManager
         // inherits LDE_WS_PORT — proc_open() without explicit $env inherits
         // the current process environment including putenv() changes.
         putenv("LDE_WS_PORT={$wsPort}");
+        putenv("LDE_WS_PORT={$wsPort}");
+        putenv("LDE_CLIENT_PATH=" . realpath(__DIR__ . '/../Resources/dev/client.js'));
 
         $this->phpProcess  = $this->spawnPhp($projectRoot, $host, $port);
         $this->nodeProcess = $this->nodeRunner->spawn($projectRoot, $wsPort);
