@@ -80,5 +80,28 @@ class MakeMigrationCommandTest extends TestCase
         }
         rmdir($dir);
     }
+
+    public function test_table_name_derived_from_migration_name(): void
+    {
+        (new MakeMigrationCommand())->handle(['create_orders_table']);
+
+        $files   = glob($this->baseDir . '/database/migrations/*.php');
+        $content = file_get_contents($files[0]);
+
+        $this->assertStringContainsString('`orders`', $content);
+        $this->assertStringNotContainsString('`example`', $content);
+    }
+
+    public function test_table_name_for_non_standard_name(): void
+    {
+        (new MakeMigrationCommand())->handle(['add_status_to_orders']);
+
+        $files   = glob($this->baseDir . '/database/migrations/*.php');
+        $content = file_get_contents($files[0]);
+
+        // Fallback: usa o nome completo quando não bate o padrão create_X_table
+        $this->assertStringContainsString('`add_status_to_orders`', $content);
+    }
+
 }
 

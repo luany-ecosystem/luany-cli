@@ -364,7 +364,7 @@ vendor/bin/phpunit --testdox
 
 ```
 OK, but some tests were skipped!
-Tests: 176, Assertions: 236, Skipped: 1.
+Tests: 185, Assertions: 246, Skipped: 1.
 ```
 
 ## Notes on recent improvements
