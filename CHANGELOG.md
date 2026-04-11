@@ -6,6 +6,28 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [1.1.0] — 2026-04-11
+
+### Added
+
+- `db:seed` — run database seeders. Defaults to `DatabaseSeeder` as entry point. Supports `--class=SeederName` (both `--class=Name` and `--class Name` forms) to run a specific seeder. Fails gracefully if `database/seeders/` does not exist.
+- `make:seeder <Name>` — scaffold a new seeder class in `database/seeders/`. Appends `Seeder` suffix if missing. Guards against overwriting existing files.
+- `migrate:fresh --seed` — after dropping all tables and re-running migrations, automatically runs `DatabaseSeeder`. Skips seeding gracefully if `database/seeders/` does not exist. No additional confirmation prompt — `fresh` is already a destructive operation the developer invokes consciously.
+- `tests/Commands/MakeSeederCommandTest.php` — 7 tests: file creation, suffix normalisation, no duplicate suffix, `extends Seeder`, `run()` method present, command name, `requiresProject()`.
+
+### Fixed
+
+- `make:migration` — generated migration stub used hardcoded table name `example` instead of deriving it from the migration name. Now extracts the table name via `create_{table}_table` pattern. Falls back to the full migration name for non-standard patterns (e.g. `add_status_to_orders`).
+- `MigrateFreshCommand` — missing `use LuanyCli\Env` import caused fatal error when `--seed` flag was used.
+- `DbSeedCommand` — missing `use LuanyCli\Env` import caused fatal error on execution.
+- `phpstan.neon` — added `Luany\\Database\\Seeder\\SeederRunner` to `ignoreErrors` (same runtime dependency pattern as `MigrationRunner` — resolved via project's own `vendor/autoload.php` at runtime).
+
+### Changed
+
+- `tests/Commands/MakeMigrationCommandTest.php` — added two tests: `test_table_name_derived_from_migration_name` and `test_table_name_for_non_standard_name`.
+
+**Tests: 176 → 185. Assertions: 236 → 246. All green.**
+
 ## [1.0.3] - 2026-03-29
 
 ### Fixed

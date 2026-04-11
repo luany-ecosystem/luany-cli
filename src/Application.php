@@ -23,6 +23,8 @@ use LuanyCli\Commands\MigrateRollbackCommand;
 use LuanyCli\Commands\MigrateStatusCommand;
 use LuanyCli\Commands\NewCommand;
 use LuanyCli\Commands\RouteListCommand;
+use LuanyCli\Commands\DbSeedCommand;
+use LuanyCli\Commands\MakeSeederCommand;
 use LuanyCli\Commands\ServeCommand;
 use LuanyCli\Support\ProjectFinder;
 
@@ -86,6 +88,7 @@ class Application
         $registry->register(new MakeControllerCommand());
         $registry->register(new MakeModelCommand());
         $registry->register(new MakeMigrationCommand());
+        $registry->register(new MakeSeederCommand());
         $registry->register(new MakeMiddlewareCommand());
         $registry->register(new MakeProviderCommand());
         $registry->register(new MakeViewCommand());
@@ -95,6 +98,7 @@ class Application
         $registry->register(new MigrateRollbackCommand());
         $registry->register(new MigrateStatusCommand());
         $registry->register(new MigrateFreshCommand());
+        $registry->register(new DbSeedCommand());
         $registry->register(new RouteListCommand());
         $registry->register(new KeyGenerateCommand());
         $registry->register(new CacheClearCommand());

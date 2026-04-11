@@ -33,16 +33,17 @@ class MakeMigrationCommand extends BaseCommand
         $dir       = Env::basePath() . '/database/migrations';
         $path      = "{$dir}/{$filename}";
         $class     = $this->toClassName($name);
+        $table     = $this->tableFromName($name);
 
         if (!is_dir($dir)) {
             mkdir($dir, 0755, true);
         }
 
-        file_put_contents($path, $this->stub($class));
+        file_put_contents($path, $this->stub($class, $table));
         echo "\n  \033[32m✓\033[0m  Migration created: database/migrations/{$filename}\n\n";
     }
 
-    private function stub(string $class): string
+    private function stub(string $class, string $table): string
     {
         return <<<PHP
 <?php
@@ -54,7 +55,7 @@ class {$class} extends Migration
     public function up(\PDO \$pdo): void
     {
         \$pdo->exec("
-            CREATE TABLE IF NOT EXISTS `example` (
+            CREATE TABLE IF NOT EXISTS `{$table}` (
                 `id`         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
                 `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -64,7 +65,7 @@ class {$class} extends Migration
 
     public function down(\PDO \$pdo): void
     {
-        \$pdo->exec("DROP TABLE IF EXISTS `example`");
+        \$pdo->exec("DROP TABLE IF EXISTS `{$table}`");
     }
 }
 PHP;
@@ -74,6 +75,19 @@ PHP;
     {
         return str_replace('_', '', ucwords($name, '_'));
     }
+
+    /**
+     * Derive table name from migration name.
+     * create_users_table      → users
+     * create_funcionarios_table → funcionarios
+     * Falls back to the full name if pattern does not match.
+     */
+    private function tableFromName(string $name): string
+    {
+        if (preg_match('/^create_(.+)_table$/', $name, $matches)) {
+            return $matches[1];
+        }
+
+        return $name;
+    }
 }
-
-
