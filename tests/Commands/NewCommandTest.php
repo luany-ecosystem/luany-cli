@@ -49,5 +49,43 @@ class NewCommandTest extends TestCase
         }
         rmdir($dir);
     }
-}
 
+    // -- Argument hardening (#3) -----------------------------------------------
+
+    public function test_build_command_ends_option_parsing_before_positionals(): void
+    {
+        $this->assertSame(
+            "composer create-project -- luany/luany " . escapeshellarg('my-app'),
+            NewCommand::buildCommand('my-app')
+        );
+    }
+
+    public function test_accepts_valid_project_names(): void
+    {
+        foreach (['my-app', 'blog', 'App_2', 'site.dev'] as $name) {
+            $this->assertSame($name, NewCommand::validateProjectName($name));
+        }
+    }
+
+    /** @return array<string, array{string}> */
+    public static function invalidProjectNames(): array
+    {
+        return [
+            'composer option'  => ['--repository={"type":"path","url":"/tmp/evil"}'],
+            'short option'     => ['-s'],
+            'traversal'        => ['../evil'],
+            'dot'              => ['.'],
+            'dotdot'           => ['..'],
+            'slash'            => ['foo/bar'],
+            'shell'            => ['app; rm -rf ~'],
+            'space'            => ['my app'],
+        ];
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('invalidProjectNames')]
+    public function test_rejects_invalid_project_name(string $name): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        (new NewCommand())->handle([$name]);
+    }
+}
