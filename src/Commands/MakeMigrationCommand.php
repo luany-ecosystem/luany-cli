@@ -4,6 +4,8 @@ namespace LuanyCli\Commands;
 
 use LuanyCli\BaseCommand;
 use LuanyCli\Env;
+use LuanyCli\Support\InvalidNameException;
+use LuanyCli\Support\MigrationFinder;
 use LuanyCli\Support\NameValidator;
 
 class MakeMigrationCommand extends BaseCommand
@@ -40,6 +42,15 @@ class MakeMigrationCommand extends BaseCommand
 
         if (!is_dir($dir)) {
             mkdir($dir, 0755, true);
+        }
+
+        // Two migrations with the same name declare the same class and make
+        // the migration runner fatal with "cannot redeclare class".
+        $existing = MigrationFinder::find($dir, $name);
+        if ($existing !== null) {
+            throw new InvalidNameException(
+                "A migration named [{$name}] already exists: database/migrations/{$existing}"
+            );
         }
 
         file_put_contents($path, $this->stub($class, $table));

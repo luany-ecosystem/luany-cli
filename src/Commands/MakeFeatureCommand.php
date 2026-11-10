@@ -6,6 +6,7 @@ use LuanyCli\BaseCommand;
 use LuanyCli\Env;
 use LuanyCli\Support\FieldParser;
 use LuanyCli\Support\InvalidNameException;
+use LuanyCli\Support\MigrationFinder;
 use LuanyCli\Support\NameValidator;
 use LuanyCli\Support\StubRenderer;
 
@@ -161,11 +162,19 @@ class MakeFeatureCommand extends BaseCommand
     private function generateMigration(StubRenderer $r, string $base, string $stubs, array $v): void
     {
         $dir  = "{$base}/database/migrations";
+        $name = "create_{$v['table']}_table";
         $ts   = date('Y_m_d_His');
-        $file = "{$ts}_create_{$v['table']}_table.php";
+        $file = "{$ts}_{$name}.php";
 
         if (!is_dir($dir)) {
             mkdir($dir, 0755, true);
+        }
+
+        // A second Create{X}Table migration would redeclare the same class.
+        $existing = MigrationFinder::find($dir, $name);
+        if ($existing !== null) {
+            echo "  \033[33m⚠ \033[0m  Migration already exists — skipped: database/migrations/{$existing}\n";
+            return;
         }
 
         $content = $r->render("{$stubs}/feature-migration.stub", $v);

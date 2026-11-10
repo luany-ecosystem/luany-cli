@@ -122,4 +122,20 @@ class MakeMigrationCommandTest extends TestCase
         $this->expectException(\LuanyCli\Support\InvalidNameException::class);
         (new MakeMigrationCommand())->handle(["x{}\";system('id');//"]);
     }
+
+    // -- Duplicate migration (#2) ----------------------------------------------
+
+    public function test_refuses_duplicate_migration_name(): void
+    {
+        file_put_contents($this->baseDir . '/database/migrations/2020_01_01_000000_create_users_table.php', '<?php');
+
+        try {
+            (new MakeMigrationCommand())->handle(['create_users_table']);
+            $this->fail('Expected InvalidNameException');
+        } catch (\LuanyCli\Support\InvalidNameException $e) {
+            $this->assertStringContainsString('already exists', $e->getMessage());
+        }
+
+        $this->assertCount(1, glob($this->baseDir . '/database/migrations/*.php') ?: []);
+    }
 }

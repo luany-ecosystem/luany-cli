@@ -458,4 +458,44 @@ class MakeFeatureCommandTest extends TestCase
             ob_end_clean();
         }
     }
+
+    // -- Duplicate migration (#2) ----------------------------------------------
+
+    public function test_does_not_create_second_migration_on_rerun(): void
+    {
+        ob_start();
+        $this->makeCommand()->handle(['Post']);
+        sleep(1); // a second run would otherwise use a different timestamp
+        $this->makeCommand()->handle(['Post']);
+        $output = (string) ob_get_clean();
+
+        $files = glob($this->baseDir . '/database/migrations/*_create_posts_table.php');
+        $this->assertCount(1, $files);
+        $this->assertStringContainsString('Migration already exists', $output);
+    }
+
+    public function test_skips_migration_created_by_make_migration(): void
+    {
+        $existing = $this->baseDir . '/database/migrations/2020_01_01_000000_create_posts_table.php';
+        file_put_contents($existing, '<?php // existing');
+
+        ob_start();
+        $this->makeCommand()->handle(['Post']);
+        ob_end_clean();
+
+        $this->assertSame([$existing], glob($this->baseDir . '/database/migrations/*.php'));
+        $this->assertSame('<?php // existing', file_get_contents($existing));
+    }
+
+    public function test_unrelated_migration_does_not_block_generation(): void
+    {
+        file_put_contents($this->baseDir . '/database/migrations/2020_01_01_000000_create_blog_posts_table.php', '<?php');
+
+        ob_start();
+        $this->makeCommand()->handle(['Post']);
+        ob_end_clean();
+
+        $this->assertCount(1, glob($this->baseDir . '/database/migrations/*_create_posts_table.php') ?: []);
+        $this->assertCount(2, glob($this->baseDir . '/database/migrations/*.php') ?: []);
+    }
 }
