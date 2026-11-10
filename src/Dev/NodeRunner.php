@@ -102,25 +102,34 @@ class NodeRunner
     }
 
     /**
+     * Shell command that locates $binary on PATH for the given OS family.
+     *
+     * `2>nul` is only valid on Windows (cmd.exe); on sh it creates a file
+     * literally named "nul" in the current directory.
+     */
+    public static function lookupCommand(string $binary, string $osFamily = PHP_OS_FAMILY): string
+    {
+        if ($osFamily === 'Windows') {
+            return 'where ' . escapeshellarg($binary) . ' 2>nul';
+        }
+
+        return 'command -v ' . escapeshellarg($binary) . ' 2>/dev/null';
+    }
+
+    /**
      * Find the Node.js binary — checks both "node" and "nodejs".
      */
     public function findNode(): string
     {
         foreach (['node', 'nodejs'] as $candidate) {
+            $output = @shell_exec(self::lookupCommand($candidate));
 
-            // ── Windows ───────────────────────────────
-            $where = @shell_exec('where ' . escapeshellarg($candidate) . ' 2>nul');
-            if ($where !== null && trim($where) !== '') {
-                $lines = preg_split('/\r\n|\r|\n/', trim($where));
-                if ($lines !== false && isset($lines[0])) {
+            if (is_string($output) && trim($output) !== '') {
+                // `where` may list several matches — take the first one.
+                $lines = preg_split('/\r\n|\r|\n/', trim($output));
+                if ($lines !== false && isset($lines[0]) && trim($lines[0]) !== '') {
                     return trim($lines[0]);
                 }
-            }
-
-            // ── UNIX (Linux/macOS) ───────────────────────────────
-            $which = @shell_exec('which ' . escapeshellarg($candidate) . ' 2>/dev/null');
-            if ($which !== null && trim($which) !== '') {
-                return trim($which);
             }
         }
 
