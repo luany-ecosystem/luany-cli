@@ -6,7 +6,7 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
-## [Unreleased]
+## [1.2.1] — 2026-11-10
 
 ### Fixed
 - `migrate`, `migrate:rollback`, `migrate:status`, `migrate:fresh`, `db:seed` and `doctor` resolve DB settings like the application: real environment variables win over `.env` (Docker, CI, PaaS). They also work with no `.env` when `DB_*` variables are set. (#9)
