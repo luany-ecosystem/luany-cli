@@ -73,5 +73,21 @@ class MakeModelCommandTest extends TestCase
         }
         rmdir($dir);
     }
-}
 
+    // -- Name validation (#1) --------------------------------------------------
+
+    public function test_rejects_invalid_name(): void
+    {
+        $this->expectException(\LuanyCli\Support\InvalidNameException::class);
+        (new MakeModelCommand())->handle(['../../Evil']);
+    }
+
+    public function test_snake_case_model_name_is_converted(): void
+    {
+        ob_start();
+        (new MakeModelCommand())->handle(['blog_post']);
+        ob_end_clean();
+
+        $this->assertFileExists($this->baseDir . '/app/Models/BlogPost.php');
+    }
+}

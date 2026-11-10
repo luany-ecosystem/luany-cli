@@ -91,4 +91,20 @@ class DevCommandTest extends TestCase
         }
         rmdir($dir);
     }
+
+    // ── Port validation (#6) ──────────────────────────────────────────────────
+
+    public function test_rejects_non_numeric_port(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessageMatches('/Invalid port \[abc\]/');
+        (new DevCommand())->handle(['localhost', 'abc']);
+    }
+
+    public function test_rejects_out_of_range_ws_port(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessageMatches('/WebSocket port/');
+        (new DevCommand())->handle(['localhost', '8000', '70000']);
+    }
 }

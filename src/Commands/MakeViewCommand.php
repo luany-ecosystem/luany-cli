@@ -4,6 +4,7 @@ namespace LuanyCli\Commands;
 
 use LuanyCli\BaseCommand;
 use LuanyCli\Env;
+use LuanyCli\Support\NameValidator;
 
 class MakeViewCommand extends BaseCommand
 {
@@ -32,7 +33,7 @@ class MakeViewCommand extends BaseCommand
             exit(1);
         }
 
-        $relativePath = str_replace('.', DIRECTORY_SEPARATOR, $name) . '.lte';
+        $relativePath = implode('/', NameValidator::viewName($name)) . '.lte';
         $fullPath     = Env::basePath() . '/views/' . $relativePath;
         $dir          = dirname($fullPath);
 

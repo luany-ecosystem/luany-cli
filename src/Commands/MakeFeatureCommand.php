@@ -5,6 +5,9 @@ namespace LuanyCli\Commands;
 use LuanyCli\BaseCommand;
 use LuanyCli\Env;
 use LuanyCli\Support\FieldParser;
+use LuanyCli\Support\InvalidNameException;
+use LuanyCli\Support\MigrationFinder;
+use LuanyCli\Support\NameValidator;
 use LuanyCli\Support\StubRenderer;
 
 class MakeFeatureCommand extends BaseCommand
@@ -29,15 +32,17 @@ class MakeFeatureCommand extends BaseCommand
             exit(1);
         }
 
-        $model  = ucfirst($name);
+        $model  = NameValidator::className($name, 'feature name');
         $models = $this->pluralize($model);
         $slug   = strtolower($models);
         $item   = strtolower($model);
         $items  = strtolower($models);
         $table  = $slug;
-        $layout = $this->resolveLayout();
 
+        // Validate inline fields before any interaction or file write.
         $inlineFields = $this->parseInlineFields(array_slice($args, 1));
+
+        $layout = $this->resolveLayout();
 
         if (!empty($inlineFields)) {
             $fields = $inlineFields;
@@ -49,6 +54,10 @@ class MakeFeatureCommand extends BaseCommand
                 echo "  \033[33m⚠\033[0m  No fields defined. Generating empty structure.\n\n";
             }
         }
+
+        // Defence in depth: every field name/type is interpolated into
+        // generated PHP, SQL and LTE code.
+        $fields = NameValidator::fields($fields);
 
         $renderer = new StubRenderer();
         $base         = Env::basePath();
@@ -153,11 +162,19 @@ class MakeFeatureCommand extends BaseCommand
     private function generateMigration(StubRenderer $r, string $base, string $stubs, array $v): void
     {
         $dir  = "{$base}/database/migrations";
+        $name = "create_{$v['table']}_table";
         $ts   = date('Y_m_d_His');
-        $file = "{$ts}_create_{$v['table']}_table.php";
+        $file = "{$ts}_{$name}.php";
 
         if (!is_dir($dir)) {
             mkdir($dir, 0755, true);
+        }
+
+        // A second Create{X}Table migration would redeclare the same class.
+        $existing = MigrationFinder::find($dir, $name);
+        if ($existing !== null) {
+            echo "  \033[33m⚠ \033[0m  Migration already exists — skipped: database/migrations/{$existing}\n";
+            return;
         }
 
         $content = $r->render("{$stubs}/feature-migration.stub", $v);
@@ -262,20 +279,29 @@ class MakeFeatureCommand extends BaseCommand
                 break;
             }
 
-            if (!preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $fieldName)) {
-                echo "  \033[31m✗\033[0m  Invalid field name — use letters, numbers and underscores only.\n\n";
+            try {
+                NameValidator::column($fieldName);
+            } catch (InvalidNameException $e) {
+                echo "  \033[31m✗\033[0m  {$e->getMessage()}\n\n";
                 continue;
             }
 
-            echo "  Type [{$types}]: ";
-            $fieldType = trim(fgets(STDIN));
+            while (true) {
+                echo "  Type [{$types}]: ";
+                $fieldType = trim((string) fgets(STDIN));
 
-            if ($fieldType === '') {
-                $fieldType = 'string';
-                echo "  \033[33m→\033[0m  No type given — defaulting to string.\n";
-            } elseif (!in_array($fieldType, FieldParser::TYPES, true)) {
-                echo "  \033[33m→\033[0m  Unknown type [{$fieldType}] — defaulting to string.\n";
-                $fieldType = 'string';
+                if ($fieldType === '') {
+                    $fieldType = 'string';
+                    echo "  \033[33m→\033[0m  No type given — defaulting to string.\n";
+                    break;
+                }
+
+                try {
+                    NameValidator::fieldType($fieldType, $fieldName);
+                    break;
+                } catch (InvalidNameException $e) {
+                    echo "  \033[31m✗\033[0m  {$e->getMessage()}\n";
+                }
             }
 
             $fields[] = ['name' => $fieldName, 'type' => $fieldType];
@@ -337,19 +363,20 @@ class MakeFeatureCommand extends BaseCommand
         $fields = [];
         foreach ($args as $arg) {
             if (!str_contains($arg, ':')) {
-                continue;
+                throw new InvalidNameException(
+                    "Invalid field definition [{$arg}] — expected name:type (e.g. title:string)."
+                );
             }
             [$name, $type] = explode(':', $arg, 2);
             $name = trim($name);
             $type = trim($type);
-            if (!in_array($type, FieldParser::TYPES, true)) {
-                $type = 'string';
-            }
-            if ($name !== '') {
-                $fields[] = ['name' => $name, 'type' => $type];
-            }
+
+            NameValidator::column($name);
+            NameValidator::fieldType($type, $name);
+
+            $fields[] = ['name' => $name, 'type' => $type];
         }
-        return $fields;
+        return NameValidator::fields($fields);
     }
 
     /** @param array<string, string> $v */

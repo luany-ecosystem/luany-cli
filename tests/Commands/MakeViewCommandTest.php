@@ -109,5 +109,18 @@ class MakeViewCommandTest extends TestCase
         }
         rmdir($dir);
     }
-}
 
+    // -- Name validation (#1) --------------------------------------------------
+
+    public function test_rejects_path_traversal_in_view_name(): void
+    {
+        $this->expectException(\LuanyCli\Support\InvalidNameException::class);
+        (new MakeViewCommand())->handle(['../../evil']);
+    }
+
+    public function test_rejects_empty_view_segment(): void
+    {
+        $this->expectException(\LuanyCli\Support\InvalidNameException::class);
+        (new MakeViewCommand())->handle(['pages..evil']);
+    }
+}

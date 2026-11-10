@@ -6,6 +6,7 @@ use LuanyCli\BaseCommand;
 use LuanyCli\Dev\NodeRunner;
 use LuanyCli\Dev\ProcessManager;
 use LuanyCli\Env;
+use LuanyCli\Support\NetworkValidator;
 
 /**
  * DevCommand — `luany dev`
@@ -38,9 +39,9 @@ class DevCommand extends BaseCommand
     /** @param array<int, string> $args */
     public function handle(array $args): void
     {
-        $host   = $args[0] ?? 'localhost';
-        $port   = (int) ($args[1] ?? 8000);
-        $wsPort = (int) ($args[2] ?? 35729);
+        $host   = NetworkValidator::host($args[0] ?? 'localhost');
+        $port   = NetworkValidator::port($args[1] ?? '8000', 'port');
+        $wsPort = NetworkValidator::port($args[2] ?? '35729', 'WebSocket port');
 
         $projectRoot = Env::basePath();
 
@@ -51,7 +52,7 @@ class DevCommand extends BaseCommand
 
         try {
             $manager->start($projectRoot, $host, $port, $wsPort);
-        } catch (\RuntimeException $e) {
+        } catch (\RuntimeException | \InvalidArgumentException $e) {
             fwrite(STDERR, "\n  \033[31m✗\033[0m  " . $e->getMessage() . "\n");
             exit(1);
         }

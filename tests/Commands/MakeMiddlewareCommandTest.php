@@ -83,6 +83,34 @@ class MakeMiddlewareCommandTest extends TestCase
         }
         rmdir($dir);
     }
+
+    // -- Name validation (#1) --------------------------------------------------
+
+    public function test_rejects_path_traversal_in_subdirectory(): void
+    {
+        try {
+            (new MakeMiddlewareCommand())->handle(['../../Evil']);
+            $this->fail('Expected InvalidNameException');
+        } catch (\LuanyCli\Support\InvalidNameException $e) {
+            $this->assertStringContainsString('..', $e->getMessage());
+        }
+
+        $this->assertFileDoesNotExist(dirname($this->baseDir) . '/EvilMiddleware.php');
+        $this->assertFileDoesNotExist($this->baseDir . '/EvilMiddleware.php');
+    }
+
+    public function test_rejects_invalid_class_name(): void
+    {
+        $this->expectException(\LuanyCli\Support\InvalidNameException::class);
+        (new MakeMiddlewareCommand())->handle(["x'];system('id');//"]);
+    }
+
+    public function test_converts_kebab_case_name_to_studly_case(): void
+    {
+        ob_start();
+        (new MakeMiddlewareCommand())->handle(['blog-post']);
+        ob_end_clean();
+
+        $this->assertFileExists($this->baseDir . '/app/Http/Middleware/BlogPostMiddleware.php');
+    }
 }
-
-

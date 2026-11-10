@@ -103,5 +103,39 @@ class MakeMigrationCommandTest extends TestCase
         $this->assertStringContainsString('`add_status_to_orders`', $content);
     }
 
-}
+    // -- Name validation (#1) --------------------------------------------------
 
+    public function test_rejects_path_traversal(): void
+    {
+        try {
+            (new MakeMigrationCommand())->handle(['../../evil']);
+            $this->fail('Expected InvalidNameException');
+        } catch (\LuanyCli\Support\InvalidNameException) {
+        }
+
+        $this->assertSame([], glob($this->baseDir . '/database/migrations/*') ?: []);
+        $this->assertSame([], glob($this->baseDir . '/*evil*') ?: []);
+    }
+
+    public function test_rejects_code_injection_in_name(): void
+    {
+        $this->expectException(\LuanyCli\Support\InvalidNameException::class);
+        (new MakeMigrationCommand())->handle(["x{}\";system('id');//"]);
+    }
+
+    // -- Duplicate migration (#2) ----------------------------------------------
+
+    public function test_refuses_duplicate_migration_name(): void
+    {
+        file_put_contents($this->baseDir . '/database/migrations/2020_01_01_000000_create_users_table.php', '<?php');
+
+        try {
+            (new MakeMigrationCommand())->handle(['create_users_table']);
+            $this->fail('Expected InvalidNameException');
+        } catch (\LuanyCli\Support\InvalidNameException $e) {
+            $this->assertStringContainsString('already exists', $e->getMessage());
+        }
+
+        $this->assertCount(1, glob($this->baseDir . '/database/migrations/*.php') ?: []);
+    }
+}

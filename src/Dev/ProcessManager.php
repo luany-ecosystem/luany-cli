@@ -2,6 +2,8 @@
 
 namespace LuanyCli\Dev;
 
+use LuanyCli\Support\NetworkValidator;
+
 /**
  * ProcessManager
  *
@@ -20,11 +22,13 @@ namespace LuanyCli\Dev;
  *
  *   The tick loop uses proc_get_status() to detect unexpected child exits
  *   (e.g. PHP server port conflict) and shuts down cleanly instead of
- *   leaving the watcher running as an orphan.
+ *   leaving the watcher running as an orphan. The CLI then exits with the
+ *   child's exit code (or 1), so scripts/CI can detect the failure.
  *
  *   pcntl_* functions are used when available (CLI SAPI on Linux/macOS).
- *   On Windows, pcntl is not available — the shutdown function is
- *   registered via register_shutdown_function() as a fallback.
+ *   On Windows, pcntl is not available — Ctrl+C / Ctrl+Break are handled
+ *   with sapi_windows_set_ctrl_handler(), and register_shutdown_function()
+ *   remains as a last-resort fallback.
  */
 class ProcessManager
 {
@@ -56,6 +60,16 @@ class ProcessManager
         int    $port   = 8000,
         int    $wsPort = 35729
     ): void {
+        $host   = NetworkValidator::host($host);
+        $port   = NetworkValidator::port($port, 'port');
+        $wsPort = NetworkValidator::port($wsPort, 'WebSocket port');
+
+        if ($port === $wsPort) {
+            throw new \InvalidArgumentException(
+                "The PHP server port and the WebSocket port must differ (both are {$port})."
+            );
+        }
+
         $this->registerSignalHandlers();
 
         // Preflight checks
@@ -68,11 +82,10 @@ class ProcessManager
         // inherits LDE_WS_PORT — proc_open() without explicit $env inherits
         // the current process environment including putenv() changes.
         putenv("LDE_WS_PORT={$wsPort}");
-        putenv("LDE_WS_PORT={$wsPort}");
         putenv("LDE_CLIENT_PATH=" . realpath(__DIR__ . '/../Resources/dev/client.js'));
 
         $this->phpProcess  = $this->spawnPhp($projectRoot, $host, $port);
-        $this->nodeProcess = $this->nodeRunner->spawn($projectRoot, $wsPort);
+        $this->nodeProcess = $this->nodeRunner->spawn($projectRoot, $wsPort, $host);
 
         $this->running = true;
 
@@ -80,10 +93,13 @@ class ProcessManager
     }
 
     /**
-     * Terminate both child processes and exit.
+     * Terminate both child processes and exit with $exitCode.
      * Safe to call multiple times — idempotent.
+     *
+     * @param int $exitCode 0 for a user-initiated stop (Ctrl+C / SIGTERM),
+     *                      non-zero when a child process failed.
      */
-    public function shutdown(): void
+    public function shutdown(int $exitCode = 0): void
     {
         if (!$this->running) {
             return;
@@ -98,7 +114,15 @@ class ProcessManager
 
         echo "  \033[32m✓\033[0m  Done.\n\n";
 
-        exit(0);
+        $this->terminate($exitCode);
+    }
+
+    /**
+     * End the CLI process. Overridable so tests can observe the exit code.
+     */
+    protected function terminate(int $exitCode): void
+    {
+        exit($exitCode);
     }
 
     // ── Private helpers ────────────────────────────────────────────────────────
@@ -114,14 +138,15 @@ class ProcessManager
                 pcntl_signal_dispatch();
             }
 
-            if (!$this->isAlive($this->phpProcess)) {
-                echo "\n  \033[31m✗\033[0m  PHP server stopped unexpectedly.\n";
-                $this->shutdown();
-            }
+            foreach (['phpProcess' => 'PHP server', 'nodeProcess' => 'Node watcher'] as $prop => $label) {
+                $code = $this->exitCodeOf($this->{$prop});
 
-            if (!$this->isAlive($this->nodeProcess)) {
-                echo "\n  \033[31m✗\033[0m  Node watcher stopped unexpectedly.\n";
-                $this->shutdown();
+                if ($code !== null) {
+                    echo "\n  \033[31m✗\033[0m  {$label} stopped unexpectedly (exit code {$code}).\n";
+                    // An unexpected stop is a failure even if the child exited with 0.
+                    $this->shutdown($code !== 0 ? $code : 1);
+                    return;
+                }
             }
 
             usleep(self::TICK_INTERVAL_US);
@@ -198,17 +223,24 @@ class ProcessManager
     }
 
     /**
-     * Check whether a proc_open() process resource is still running.
+     * Exit code of a finished child, or null while it is still running.
+     * A missing process or an unknown exit code (-1) is reported as 1.
      *
      * @param  resource|null $process
      */
-    private function isAlive($process): bool
+    private function exitCodeOf($process): ?int
     {
         if ($process === null) {
-            return false;
+            return 1;
         }
+
         $status = proc_get_status($process);
-        return $status['running'] === true;
+
+        if ($status['running'] === true) {
+            return null;
+        }
+
+        return $status['exitcode'] >= 0 ? $status['exitcode'] : 1;
     }
 
     /**
@@ -264,6 +296,14 @@ class ProcessManager
         register_shutdown_function(function (): void {
             $this->shutdown();
         });
+
+        // Windows: handle Ctrl+C / Ctrl+Break explicitly instead of relying
+        // on console signal propagation to the child processes.
+        if (function_exists('sapi_windows_set_ctrl_handler')) {
+            sapi_windows_set_ctrl_handler(function (int $event): void {
+                $this->shutdown();
+            });
+        }
 
         if (!function_exists('pcntl_signal')) {
             return;

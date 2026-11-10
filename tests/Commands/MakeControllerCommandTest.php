@@ -83,6 +83,34 @@ class MakeControllerCommandTest extends TestCase
         }
         rmdir($dir);
     }
+
+    // -- Name validation (#1) --------------------------------------------------
+
+    public function test_rejects_path_traversal_in_subdirectory(): void
+    {
+        try {
+            (new MakeControllerCommand())->handle(['../../Evil']);
+            $this->fail('Expected InvalidNameException');
+        } catch (\LuanyCli\Support\InvalidNameException $e) {
+            $this->assertStringContainsString('..', $e->getMessage());
+        }
+
+        $this->assertFileDoesNotExist(dirname($this->baseDir) . '/EvilController.php');
+        $this->assertFileDoesNotExist($this->baseDir . '/EvilController.php');
+    }
+
+    public function test_rejects_invalid_class_name(): void
+    {
+        $this->expectException(\LuanyCli\Support\InvalidNameException::class);
+        (new MakeControllerCommand())->handle(["x'];system('id');//"]);
+    }
+
+    public function test_converts_kebab_case_name_to_studly_case(): void
+    {
+        ob_start();
+        (new MakeControllerCommand())->handle(['blog-post']);
+        ob_end_clean();
+
+        $this->assertFileExists($this->baseDir . '/app/Controllers/BlogPostController.php');
+    }
 }
-
-

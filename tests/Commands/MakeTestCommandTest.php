@@ -153,4 +153,34 @@ class MakeTestCommandTest extends TestCase
     {
         $this->assertSame('make:test', $this->command->name());
     }
+
+    // -- Name validation (#1) --------------------------------------------------
+
+    public function test_rejects_path_traversal_in_subdirectory(): void
+    {
+        try {
+            (new \LuanyCli\Commands\MakeTestCommand())->handle(['../../Evil']);
+            $this->fail('Expected InvalidNameException');
+        } catch (\LuanyCli\Support\InvalidNameException $e) {
+            $this->assertStringContainsString('..', $e->getMessage());
+        }
+
+        $this->assertFileDoesNotExist(dirname($this->baseDir) . '/EvilTest.php');
+        $this->assertFileDoesNotExist($this->baseDir . '/EvilTest.php');
+    }
+
+    public function test_rejects_invalid_class_name(): void
+    {
+        $this->expectException(\LuanyCli\Support\InvalidNameException::class);
+        (new \LuanyCli\Commands\MakeTestCommand())->handle(["x'];system('id');//"]);
+    }
+
+    public function test_converts_kebab_case_name_to_studly_case(): void
+    {
+        ob_start();
+        (new \LuanyCli\Commands\MakeTestCommand())->handle(['blog-post']);
+        ob_end_clean();
+
+        $this->assertFileExists($this->baseDir . '/tests/BlogPostTest.php');
+    }
 }

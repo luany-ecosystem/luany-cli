@@ -58,7 +58,13 @@ class Application
             self::assertInsideLuanyProject();
         }
 
-        $command->handle($args);
+        try {
+            $command->handle($args);
+        } catch (\InvalidArgumentException $e) {
+            // InvalidNameException and other user-input validation errors.
+            fwrite(STDERR, "\n  \033[31m✗\033[0m  {$e->getMessage()}\n\n");
+            exit(1);
+        }
     }
 
     /**

@@ -127,19 +127,12 @@ class NodeRunnerTest extends TestCase
 
     private function isNodeAvailable(): bool
     {
-        foreach (['node', 'nodejs'] as $candidate) {
-            // Unix
-            $which = @shell_exec('which ' . escapeshellarg($candidate) . ' 2>/dev/null');
-            if ($which !== null && trim($which) !== '') {
-                return true;
-            }
-            // Windows
-            $where = @shell_exec('where ' . escapeshellarg($candidate) . ' 2>nul');
-            if ($where !== null && trim($where) !== '') {
-                return true;
-            }
+        try {
+            (new NodeRunner())->findNode();
+            return true;
+        } catch (\RuntimeException) {
+            return false;
         }
-        return false;
     }
 
     private function removeDir(string $dir): void
@@ -151,5 +144,46 @@ class NodeRunnerTest extends TestCase
             is_dir($path) ? $this->removeDir($path) : unlink($path);
         }
         rmdir($dir);
+    }
+
+    // ── OS-specific lookup (#4) ───────────────────────────────────────────────
+
+    public function test_lookup_command_uses_where_and_nul_on_windows(): void
+    {
+        $cmd = NodeRunner::lookupCommand('node', 'Windows');
+
+        $this->assertStringStartsWith('where ', $cmd);
+        $this->assertStringEndsWith('2>nul', $cmd);
+    }
+
+    public function test_lookup_command_never_redirects_to_nul_on_unix(): void
+    {
+        foreach (['Linux', 'Darwin', 'BSD', 'Solaris'] as $os) {
+            $cmd = NodeRunner::lookupCommand('node', $os);
+
+            $this->assertDoesNotMatchRegularExpression('/2>\s*nul\b/', $cmd, $os);
+            $this->assertStringNotContainsString('where', $cmd, $os);
+            $this->assertStringEndsWith('2>/dev/null', $cmd, $os);
+        }
+    }
+
+    public function test_find_node_does_not_create_nul_file(): void
+    {
+        if (PHP_OS_FAMILY === 'Windows') {
+            $this->markTestSkipped('"nul" is a reserved device name on Windows.');
+        }
+
+        $cwd = getcwd();
+        chdir($this->baseDir);
+
+        try {
+            $this->runner->findNode();
+        } catch (\RuntimeException) {
+            // Node not installed — irrelevant for this test.
+        } finally {
+            chdir((string) $cwd);
+        }
+
+        $this->assertFileDoesNotExist($this->baseDir . '/nul');
     }
 }
