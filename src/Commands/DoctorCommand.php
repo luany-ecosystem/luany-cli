@@ -56,16 +56,12 @@ class DoctorCommand extends BaseCommand
         $this->checkDir('vendor',           $base . '/vendor');
         $this->checkDir('vendor/luany/framework', $base . '/vendor/luany/framework');
         $this->checkDir('database/migrations', $base . '/database/migrations');
-        // APP_KEY
-        $envFile = $base . '/.env';
-        $appKey  = '';
-        if (file_exists($envFile)) {
-            foreach (file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
-                if (str_starts_with(trim($line), 'APP_KEY=')) {
-                    $appKey = trim(substr(trim($line), 8), '"\'');
-                    break;
-                }
-            }
+        // APP_KEY (real environment first, then .env — like the app)
+        try {
+            $appKey = (string) \LuanyCli\Support\EnvRepository::load($base)->get('APP_KEY', '');
+        } catch (\LuanyCli\Support\EnvException $e) {
+            printf("  \033[31m✗\033[0m  %-30s %s\n", '.env', 'not readable — check permissions');
+            $appKey = '';
         }
         $keyOk = !empty($appKey);
         $icon  = $keyOk ? "\033[32m✓\033[0m" : "\033[31m✗\033[0m";
@@ -140,25 +136,33 @@ class DoctorCommand extends BaseCommand
 
     private function checkDatabase(string $base): void
     {
-        $envFile = $base . '/.env';
-        if (!file_exists($envFile)) {
-            printf("  \033[31m✗\033[0m  %-30s %s\n", 'database connection', '.env not found');
+        try {
+            $env = \LuanyCli\Support\EnvRepository::load($base);
+        } catch (\LuanyCli\Support\EnvException $e) {
+            printf("  \033[31m✗\033[0m  %-30s %s\n", 'database connection', '.env exists but is not readable');
             return;
         }
 
-        $env = \LuanyCli\Support\EnvParser::parse($envFile);
+        if (!$env->hasFile() && !$env->has('DB_HOST') && !$env->has('DB_NAME')) {
+            printf("  \033[31m✗\033[0m  %-30s %s\n", 'database connection', '.env not found and no DB_* environment variables');
+            return;
+        }
+
+        $source = $env->isFromEnvironment('DB_HOST') || $env->isFromEnvironment('DB_NAME')
+            ? ' (from environment)'
+            : '';
 
         try {
             $dsn = sprintf(
                 'mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4',
-                $env['DB_HOST'] ?? '127.0.0.1',
-                $env['DB_PORT'] ?? '3306',
-                $env['DB_NAME'] ?? 'luany',
+                $env->get('DB_HOST', '127.0.0.1'),
+                $env->get('DB_PORT', '3306'),
+                $env->get('DB_NAME', 'luany'),
             );
-            $pdo = new \PDO($dsn, $env['DB_USER'] ?? 'root', $env['DB_PASS'] ?? '', [
+            $pdo = new \PDO($dsn, $env->get('DB_USER', 'root'), $env->get('DB_PASS', ''), [
                 \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
             ]);
-            printf("  \033[32m✓\033[0m  %-30s %s\n", 'database connection', 'ok');
+            printf("  \033[32m✓\033[0m  %-30s %s\n", 'database connection', 'ok' . $source);
 
             $tables = $pdo->query("SHOW TABLES LIKE '_migrations'")->fetchAll();
             $exists = !empty($tables);

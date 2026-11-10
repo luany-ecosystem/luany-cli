@@ -6,6 +6,17 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [Unreleased]
+
+### Fixed
+- `migrate`, `migrate:rollback`, `migrate:status`, `migrate:fresh`, `db:seed` and `doctor` resolve DB settings like the application: real environment variables win over `.env` (Docker, CI, PaaS). They also work with no `.env` when `DB_*` variables are set. (#9)
+- An `.env` that exists but cannot be read now fails with a clear message instead of silently connecting to `127.0.0.1` as `root`. (#9)
+
+### Added
+- `LuanyCli\Support\EnvRepository` and `EnvException`.
+
+---
+
 ## [1.2.0] — 2026-11-10
 
 ### Security
