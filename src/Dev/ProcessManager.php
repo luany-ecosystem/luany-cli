@@ -72,7 +72,7 @@ class ProcessManager
         putenv("LDE_CLIENT_PATH=" . realpath(__DIR__ . '/../Resources/dev/client.js'));
 
         $this->phpProcess  = $this->spawnPhp($projectRoot, $host, $port);
-        $this->nodeProcess = $this->nodeRunner->spawn($projectRoot, $wsPort);
+        $this->nodeProcess = $this->nodeRunner->spawn($projectRoot, $wsPort, $host);
 
         $this->running = true;
 

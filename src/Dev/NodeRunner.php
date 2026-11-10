@@ -54,10 +54,11 @@ class NodeRunner
      *
      * @param  string  $projectRoot  Absolute path to the Luany project root
      * @param  int     $wsPort       WebSocket server port (default: 35729)
+     * @param  string  $host         Dev server host — browsers on it may connect
      * @return resource              proc_open() process resource
      * @throws \RuntimeException     If the process could not be started
      */
-    public function spawn(string $projectRoot, int $wsPort = 35729)
+    public function spawn(string $projectRoot, int $wsPort = 35729, string $host = 'localhost')
     {
         $node = $this->findNode();
 
@@ -69,6 +70,7 @@ class NodeRunner
             $this->watcherScript,
             $projectRoot,
             (string) $wsPort,
+            $host,
         ];
 
         // getenv() is used as fallback when $_ENV is empty — this happens
