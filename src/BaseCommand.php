@@ -2,6 +2,8 @@
 
 namespace LuanyCli;
 
+use LuanyCli\Support\NameValidator;
+
 /**
  * BaseCommand
  *
@@ -19,10 +21,32 @@ abstract class BaseCommand implements CommandInterface
         return true;
     }
 
+    /**
+     * Validate a class name (converting snake/kebab-case to StudlyCase)
+     * and append $suffix if missing.
+     *
+     * @throws \LuanyCli\Support\InvalidNameException
+     */
     protected function normalizeName(string $name, string $suffix): string
     {
-        $name = ucfirst($name);
+        $name = NameValidator::className($name);
         return str_ends_with($name, $suffix) ? $name : $name . $suffix;
+    }
+
+    /**
+     * Validate a "Sub/Dir/Name" class path and append $suffix to the class.
+     *
+     * @return array{subPath: string, className: string}
+     * @throws \LuanyCli\Support\InvalidNameException
+     */
+    protected function normalizeClassPath(string $name, string $suffix): array
+    {
+        $parsed = NameValidator::classPath($name);
+
+        return [
+            'subPath'   => implode('/', $parsed['segments']),
+            'className' => $this->normalizeName($parsed['class'], $suffix),
+        ];
     }
 }
 

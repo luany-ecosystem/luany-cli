@@ -29,9 +29,7 @@ class MakeRequestCommand extends BaseCommand
         }
 
         // Normalise — append 'Request' suffix if missing
-        $segments  = explode('/', str_replace('\\', '/', $name));
-        $className = $this->normalizeName(array_pop($segments), 'Request');
-        $subPath   = implode('/', $segments);
+        ['subPath' => $subPath, 'className' => $className] = $this->normalizeClassPath($name, 'Request');
 
         $namespace = 'App\\Http\\Requests' . ($subPath ? '\\' . str_replace('/', '\\', $subPath) : '');
         $dir       = Env::basePath() . '/app/Http/Requests' . ($subPath ? '/' . $subPath : '');

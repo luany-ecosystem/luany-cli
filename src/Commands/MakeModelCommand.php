@@ -4,6 +4,7 @@ namespace LuanyCli\Commands;
 
 use LuanyCli\BaseCommand;
 use LuanyCli\Env;
+use LuanyCli\Support\NameValidator;
 
 class MakeModelCommand extends BaseCommand
 {
@@ -27,7 +28,7 @@ class MakeModelCommand extends BaseCommand
             exit(1);
         }
 
-        $name  = ucfirst($name);
+        $name  = NameValidator::className($name, 'model name');
         $table = $this->toTableName($name);
         $dir   = Env::basePath() . '/app/Models';
         $path  = "{$dir}/{$name}.php";

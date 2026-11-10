@@ -360,4 +360,102 @@ class MakeFeatureCommandTest extends TestCase
 
         $this->assertFileDoesNotExist($this->baseDir . '/app/Models/.gitkeep');
     }
+
+    // -- Name validation (#1) --------------------------------------------------
+
+    /** Snapshot of every file under the temp project (relative paths). */
+    private function projectFiles(): array
+    {
+        $files = [];
+        $it = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($this->baseDir, \FilesystemIterator::SKIP_DOTS));
+        foreach ($it as $file) {
+            $files[] = substr($file->getPathname(), strlen($this->baseDir));
+        }
+        sort($files);
+        return $files;
+    }
+
+    private function assertRejected(array $args, string $messagePattern): void
+    {
+        $before  = $this->projectFiles();
+        $command = new class extends MakeFeatureCommand {
+            protected function collectFields(): array {
+                throw new \RuntimeException('Should not be called');
+            }
+        };
+
+        ob_start();
+        try {
+            $command->handle($args);
+            $this->fail('Expected InvalidNameException');
+        } catch (\LuanyCli\Support\InvalidNameException $e) {
+            $this->assertMatchesRegularExpression($messagePattern, $e->getMessage());
+        } finally {
+            ob_end_clean();
+        }
+
+        $this->assertSame($before, $this->projectFiles(), 'No file may be written when validation fails');
+    }
+
+    public function test_rejects_php_injection_in_inline_field_name(): void
+    {
+        $this->assertRejected(['Post', "x'];system('id');//:string"], '/Invalid field name/');
+    }
+
+    public function test_rejects_sql_injection_in_inline_field_name(): void
+    {
+        $this->assertRejected(['Post', 'x` TEXT); DROP TABLE users; --:string'], '/Invalid field name/');
+    }
+
+    public function test_rejects_unknown_inline_field_type(): void
+    {
+        $this->assertRejected(['Post', 'title:varchar'], '/Unknown field type \[varchar\]/');
+    }
+
+    public function test_rejects_inline_field_without_type(): void
+    {
+        $this->assertRejected(['Post', 'title'], '/expected name:type/');
+    }
+
+    public function test_rejects_duplicate_inline_fields(): void
+    {
+        $this->assertRejected(['Post', 'title:string', 'title:text'], '/Duplicate field name/');
+    }
+
+    public function test_rejects_reserved_inline_field(): void
+    {
+        $this->assertRejected(['Post', 'id:integer'], '/reserved/');
+    }
+
+    public function test_rejects_path_traversal_in_feature_name(): void
+    {
+        $this->assertRejected(['../../x'], '/Invalid feature name/');
+    }
+
+    public function test_rejects_invalid_feature_name(): void
+    {
+        $this->assertRejected(['Foo Bar'], '/Invalid feature name/');
+    }
+
+    public function test_kebab_case_feature_name_is_converted(): void
+    {
+        ob_start();
+        $this->makeCommand()->handle(['blog-post']);
+        ob_end_clean();
+
+        $this->assertFileExists($this->baseDir . '/app/Models/BlogPost.php');
+        $this->assertFileExists($this->baseDir . '/app/Controllers/BlogPostController.php');
+    }
+
+    public function test_fields_from_interactive_source_are_validated(): void
+    {
+        $this->expectException(\LuanyCli\Support\InvalidNameException::class);
+
+        ob_start();
+        try {
+            $this->makeCommand([['name' => "x'", 'type' => 'string']])->handle(['Post']);
+        } finally {
+            ob_end_clean();
+        }
+    }
 }

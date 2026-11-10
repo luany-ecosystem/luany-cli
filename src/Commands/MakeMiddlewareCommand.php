@@ -28,9 +28,7 @@ class MakeMiddlewareCommand extends BaseCommand
         }
 
         // Support subdirectory paths: Auth/Login → app/Http/Middleware/Auth/LoginMiddleware.php
-        $segments  = explode('/', str_replace('\\', '/', $name));
-        $className = $this->normalizeName(array_pop($segments), 'Middleware');
-        $subPath   = implode('/', $segments);
+        ['subPath' => $subPath, 'className' => $className] = $this->normalizeClassPath($name, 'Middleware');
 
         $namespace = 'App\\Http\\Middleware' . ($subPath ? '\\' . str_replace('/', '\\', $subPath) : '');
         $dir       = Env::basePath() . '/app/Http/Middleware' . ($subPath ? '/' . $subPath : '');

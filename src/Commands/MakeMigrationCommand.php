@@ -4,6 +4,7 @@ namespace LuanyCli\Commands;
 
 use LuanyCli\BaseCommand;
 use LuanyCli\Env;
+use LuanyCli\Support\NameValidator;
 
 class MakeMigrationCommand extends BaseCommand
 {
@@ -27,6 +28,8 @@ class MakeMigrationCommand extends BaseCommand
             fwrite(STDERR, "  Example: luany make:migration create_users_table\n\n");
             exit(1);
         }
+
+        $name = NameValidator::migrationName($name);
 
         $timestamp = date('Y_m_d_His');
         $filename  = "{$timestamp}_{$name}.php";

@@ -26,6 +26,7 @@ use LuanyCli\Commands\RouteListCommand;
 use LuanyCli\Commands\DbSeedCommand;
 use LuanyCli\Commands\MakeSeederCommand;
 use LuanyCli\Commands\ServeCommand;
+use LuanyCli\Support\InvalidNameException;
 use LuanyCli\Support\ProjectFinder;
 
 class Application
@@ -58,7 +59,12 @@ class Application
             self::assertInsideLuanyProject();
         }
 
-        $command->handle($args);
+        try {
+            $command->handle($args);
+        } catch (InvalidNameException $e) {
+            fwrite(STDERR, "\n  \033[31m✗\033[0m  {$e->getMessage()}\n\n");
+            exit(1);
+        }
     }
 
     /**

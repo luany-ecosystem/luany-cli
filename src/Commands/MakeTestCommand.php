@@ -29,9 +29,7 @@ class MakeTestCommand extends BaseCommand
         }
 
         // Normalise — append 'Test' suffix if missing
-        $segments  = explode('/', str_replace('\\', '/', $name));
-        $className = $this->normalizeName(array_pop($segments), 'Test');
-        $subPath   = implode('/', $segments);
+        ['subPath' => $subPath, 'className' => $className] = $this->normalizeClassPath($name, 'Test');
 
         $namespace = 'Tests' . ($subPath ? '\\' . str_replace('/', '\\', $subPath) : '');
         $dir       = Env::basePath() . '/tests' . ($subPath ? '/' . $subPath : '');

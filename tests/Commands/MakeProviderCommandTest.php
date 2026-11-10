@@ -64,5 +64,12 @@ class MakeProviderCommandTest extends TestCase
         }
         rmdir($dir);
     }
-}
 
+    // -- Name validation (#1) --------------------------------------------------
+
+    public function test_rejects_invalid_name(): void
+    {
+        $this->expectException(\LuanyCli\Support\InvalidNameException::class);
+        (new MakeProviderCommand())->handle(['../Evil']);
+    }
+}

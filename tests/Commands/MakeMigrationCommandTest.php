@@ -103,5 +103,23 @@ class MakeMigrationCommandTest extends TestCase
         $this->assertStringContainsString('`add_status_to_orders`', $content);
     }
 
-}
+    // -- Name validation (#1) --------------------------------------------------
 
+    public function test_rejects_path_traversal(): void
+    {
+        try {
+            (new MakeMigrationCommand())->handle(['../../evil']);
+            $this->fail('Expected InvalidNameException');
+        } catch (\LuanyCli\Support\InvalidNameException) {
+        }
+
+        $this->assertSame([], glob($this->baseDir . '/database/migrations/*') ?: []);
+        $this->assertSame([], glob($this->baseDir . '/*evil*') ?: []);
+    }
+
+    public function test_rejects_code_injection_in_name(): void
+    {
+        $this->expectException(\LuanyCli\Support\InvalidNameException::class);
+        (new MakeMigrationCommand())->handle(["x{}\";system('id');//"]);
+    }
+}
