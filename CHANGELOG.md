@@ -6,6 +6,41 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [Unreleased]
+
+### Security
+
+- **Generators no longer inject unvalidated names into generated code or paths** (#1). New `Support\NameValidator` is applied to every `make:*` command:
+  - class names must be StudlyCase (`^[A-Z][A-Za-z0-9]*$`); `snake_case`, `kebab-case` and `camelCase` input is converted (`blog-post` → `BlogPost`), anything else is rejected;
+  - field/column names must match `^[a-z_][a-z0-9_]*$`; `id`, `created_at`, `updated_at` are reserved; duplicate fields are rejected;
+  - sub-directory segments (`make:controller Auth/Login`, etc.) reject `..`, empty segments and separators;
+  - migration names must be `snake_case`; view names dot-separated `[A-Za-z0-9_-]` segments.
+  - `make:feature` validates the feature name and all fields (inline and interactive) before writing any file.
+- `serve` builds the server command with `PHP_BINARY` and `escapeshellarg()`; host and port are validated (#3).
+- `new` validates the project name and passes `--` before composer's positional arguments, so names like `--repository=…` can no longer be injected as options (#3).
+- LDE watcher rejects WebSocket handshakes whose `Origin` is not a loopback host or the host passed to `luany dev` (#5).
+
+### Fixed
+
+- `make:feature` no longer writes a second `Create{X}Table` migration when one already exists for the table; `make:migration` refuses to create a duplicate migration name (#2).
+- `luany dev` no longer creates a stray `nul` file on Linux/macOS — `where … 2>nul` is only used on Windows (#4).
+- LDE watcher (#5):
+  - globs use forward slashes, so files are watched on Windows;
+  - hidden-file ignore is evaluated relative to the project root (projects under dotted directories now reload);
+  - only the top-level `vendor/` directory is ignored (e.g. `public/assets/vendor` is watched);
+  - every CSS file changed within the debounce window is injected (previously only the first);
+  - deleting a watched file triggers a reload.
+- `ProcessManager` (#6): the CLI exits with the failing child's exit code (or 1) when the PHP server or watcher stops unexpectedly; ports are validated (1–65535, distinct) instead of `(int)`-cast; duplicated `putenv` removed; Ctrl+C on Windows is handled via `sapi_windows_set_ctrl_handler()`.
+- `composer.json`: removed the `post-install-cmd` that referenced the non-existent `bin/luany-welcome`, which broke development installs (#7).
+
+### Changed
+
+- Unknown field types in `make:feature` are now an error (with the list of valid types) instead of silently defaulting to `string`. Pressing Enter at the interactive type prompt still defaults to `string`.
+- Invalid names/arguments are reported as `✗ <message>` with exit code 1.
+- `NodeRunner::spawn()` accepts the dev host and forwards it to `watcher.js` (used by the Origin check). Watcher helpers moved to `Resources/dev/watcher-lib.js`, covered by `node:test` unit tests (`tests/js/`), executed from PHPUnit when Node is available.
+
+**Tests: 185 → 336. All green. PHPStan level 6: no errors.**
+
 ## [1.1.0] — 2026-04-11
 
 ### Added
