@@ -30,11 +30,6 @@
             "LuanyCli\\Tests\\": "tests/"
         }
     },
-    "scripts": {
-        "post-install-cmd": [
-            "@php bin/luany-welcome"
-        ]
-    },
     "bin": [
         "bin/luany"
     ],
