@@ -106,17 +106,12 @@ class ProcessManagerTest extends TestCase
 
     private function isNodeAvailable(): bool
     {
-        foreach (['node', 'nodejs'] as $candidate) {
-            $which = @shell_exec('which ' . escapeshellarg($candidate) . ' 2>/dev/null');
-            if ($which !== null && trim($which) !== '') {
-                return true;
-            }
-            $where = @shell_exec('where ' . escapeshellarg($candidate) . ' 2>nul');
-            if ($where !== null && trim($where) !== '') {
-                return true;
-            }
+        try {
+            (new NodeRunner())->findNode();
+            return true;
+        } catch (\RuntimeException) {
+            return false;
         }
-        return false;
     }
 
     private function removeDir(string $dir): void
@@ -128,5 +123,117 @@ class ProcessManagerTest extends TestCase
             is_dir($path) ? $this->removeDir($path) : unlink($path);
         }
         rmdir($dir);
+    }
+
+    // ── Port validation (#6) ──────────────────────────────────────────────────
+
+    /** @return array<string, array{int, int}> */
+    public static function invalidPorts(): array
+    {
+        return [
+            'zero port'       => [0, 35729],
+            'negative port'   => [-1, 35729],
+            'port too large'  => [65536, 35729],
+            'zero ws port'    => [8000, 0],
+            'ws too large'    => [8000, 70000],
+            'same ports'      => [8000, 8000],
+        ];
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('invalidPorts')]
+    public function test_start_rejects_invalid_ports_before_any_preflight(int $port, int $wsPort): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        (new ProcessManager(new NodeRunner()))->start(sys_get_temp_dir(), 'localhost', $port, $wsPort);
+    }
+
+    public function test_start_rejects_invalid_host(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        (new ProcessManager(new NodeRunner()))->start(sys_get_temp_dir(), 'localhost; id', 8000, 35729);
+    }
+
+    public function test_no_duplicate_putenv(): void
+    {
+        $source = (string) file_get_contents(__DIR__ . '/../../src/Dev/ProcessManager.php');
+        $this->assertSame(1, substr_count($source, 'putenv("LDE_WS_PORT='));
+    }
+
+    // ── Exit code (#6) ────────────────────────────────────────────────────────
+
+    /**
+     * ProcessManager whose terminate() records the exit code instead of exiting.
+     */
+    private function recordingManager(): ProcessManager
+    {
+        return new class(new NodeRunner()) extends ProcessManager {
+            public ?int $exitCode = null;
+            protected function terminate(int $exitCode): void
+            {
+                $this->exitCode = $exitCode;
+            }
+        };
+    }
+
+    /** @return resource */
+    private function spawnPhp(string $code)
+    {
+        $process = proc_open([PHP_BINARY, '-r', $code], [], $pipes);
+        $this->assertIsResource($process);
+        return $process;
+    }
+
+    private function runTick(ProcessManager $manager, mixed $php, mixed $node): void
+    {
+        $ref = new \ReflectionClass(ProcessManager::class);
+        $ref->getProperty('phpProcess')->setValue($manager, $php);
+        $ref->getProperty('nodeProcess')->setValue($manager, $node);
+        $ref->getProperty('running')->setValue($manager, true);
+
+        ob_start();
+        try {
+            $ref->getMethod('tick')->invoke($manager);
+        } finally {
+            ob_end_clean();
+        }
+    }
+
+    public function test_exit_code_reflects_crashed_child(): void
+    {
+        $manager = $this->recordingManager();
+        $crashed = $this->spawnPhp('exit(3);');
+        $alive   = $this->spawnPhp('sleep(30);');
+
+        $this->runTick($manager, $crashed, $alive);
+
+        $this->assertSame(3, $manager->exitCode);
+
+        // The surviving child must have been terminated.
+        $ref = new \ReflectionClass(ProcessManager::class);
+        $this->assertNull($ref->getProperty('nodeProcess')->getValue($manager));
+    }
+
+    public function test_unexpected_clean_child_exit_is_still_a_failure(): void
+    {
+        $manager = $this->recordingManager();
+
+        $this->runTick($manager, $this->spawnPhp('sleep(30);'), $this->spawnPhp('exit(0);'));
+
+        $this->assertSame(1, $manager->exitCode);
+    }
+
+    public function test_user_initiated_shutdown_exits_with_zero(): void
+    {
+        $manager = $this->recordingManager();
+        $ref     = new \ReflectionClass(ProcessManager::class);
+        $ref->getProperty('phpProcess')->setValue($manager, $this->spawnPhp('sleep(30);'));
+        $ref->getProperty('nodeProcess')->setValue($manager, $this->spawnPhp('sleep(30);'));
+        $ref->getProperty('running')->setValue($manager, true);
+
+        ob_start();
+        $manager->shutdown();
+        ob_end_clean();
+
+        $this->assertSame(0, $manager->exitCode);
     }
 }
