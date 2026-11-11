@@ -152,6 +152,13 @@ class DoctorCommand extends BaseCommand
             ? ' (from environment)'
             : '';
 
+        $driver  = strtolower((string) $env->get('DB_CONNECTION', 'mysql'));
+        $problem = \LuanyCli\Support\DriverCheck::problem($driver);
+        if ($problem !== null) {
+            printf("  \033[31m✗\033[0m  %-30s %s\n", 'database driver', $problem);
+            return;
+        }
+
         try {
             $pdo    = \LuanyCli\Commands\MigrateBaseCommand::connect($env, $base);
             $driver = (string) $pdo->getAttribute(\PDO::ATTR_DRIVER_NAME);

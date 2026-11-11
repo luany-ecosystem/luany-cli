@@ -33,7 +33,16 @@ abstract class MigrateBaseCommand extends BaseCommand
 
     protected function pdo(): \PDO
     {
-        return self::connect($this->env(), Env::basePath());
+        $env    = $this->env();
+        $driver = strtolower((string) $env->get('DB_CONNECTION', 'mysql'));
+
+        $problem = \LuanyCli\Support\DriverCheck::problem($driver);
+        if ($problem !== null) {
+            fwrite(STDERR, "\n  \033[31m✗\033[0m  {$problem}\n\n");
+            exit(1);
+        }
+
+        return self::connect($env, Env::basePath());
     }
 
     /**
