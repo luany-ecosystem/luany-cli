@@ -73,14 +73,18 @@ class MakeFeatureCommand extends BaseCommand
             'layout'            => $layout,
             'fillable'          => FieldParser::toFillable($fields),
             'casts'             => FieldParser::toCasts($fields),
+            'relations'         => FieldParser::toRelations($fields),
+            'model_imports'     => FieldParser::toModelImports($fields),
             'migration_columns' => FieldParser::toMigrationColumns($fields),
+            'migration_constraints' => FieldParser::toMigrationConstraints($fields, $table),
             'form_fields'       => FieldParser::toFormFields($fields),
             'show_fields'       => FieldParser::toShowFields($fields, $item),
             'index_headers'     => FieldParser::toIndexHeaders($fields),
             'index_rows'        => FieldParser::toIndexRows($fields, $item),
             'fillable_keys'     => FieldParser::toFillableKeys($fields),
             'edit_fields'       => FieldParser::toEditFields($fields, $item),
-            'validation_rules'  => FieldParser::toValidationRules($fields),
+            'validation_rules'  => FieldParser::toValidationRules($fields, $table),
+            'validation_rules_update' => FieldParser::toValidationRules($fields, $table, true),
         ];
 
         echo "\n  \033[33m→\033[0m  Creating feature [\033[36m{$model}\033[0m]...\n\n";
@@ -91,8 +95,29 @@ class MakeFeatureCommand extends BaseCommand
         $this->generateViews($renderer, $base, $stubs, $variables);
         $this->appendRoutes($base, $variables);
         $this->printRoutes($variables);
+        $this->warnMissingReferences($base, $fields);
 
         echo "\n";
+    }
+
+    /**
+     * Foreign keys need the referenced table to exist before this migration
+     * runs — warn when no create_{table}_table migration is found.
+     *
+     * @param array<int, array{name: string, type: string}> $fields
+     */
+    private function warnMissingReferences(string $base, array $fields): void
+    {
+        $existing = [];
+        foreach (glob("{$base}/database/migrations/*.php") ?: [] as $file) {
+            if (preg_match('/create_([a-z0-9_]+)_table/', basename($file), $m) === 1) {
+                $existing[] = $m[1];
+            }
+        }
+
+        foreach (FieldParser::missingReferences($fields, $existing) as $table) {
+            echo "  \033[33m⚠ \033[0m  No migration creates [{$table}] yet — create it before running migrate (foreign key).\n";
+        }
     }
 
     // ── Generators ────────────────────────────────────────────────────────────

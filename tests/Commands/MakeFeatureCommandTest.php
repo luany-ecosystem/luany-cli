@@ -498,4 +498,102 @@ class MakeFeatureCommandTest extends TestCase
         $this->assertCount(1, glob($this->baseDir . '/database/migrations/*_create_posts_table.php') ?: []);
         $this->assertCount(2, glob($this->baseDir . '/database/migrations/*.php') ?: []);
     }
+
+    // -- ORM-aware generation ---------------------------------------------------
+
+    private function generate(array $args): void
+    {
+        $command = new class extends MakeFeatureCommand {
+            protected function collectFields(): array { return []; }
+        };
+        ob_start();
+        try {
+            $command->handle($args);
+        } finally {
+            ob_end_clean();
+        }
+    }
+
+    private function assertValidPhp(string $file): void
+    {
+        exec(escapeshellarg(PHP_BINARY) . ' -l ' . escapeshellarg($file) . ' 2>&1', $out, $code);
+        $this->assertSame(0, $code, implode("\n", $out));
+    }
+
+    public function test_generated_php_is_valid_for_every_field_type(): void
+    {
+        $this->generate([
+            'Product', 'name:string', 'body:text', 'qty:integer', 'price:decimal', 'active:boolean',
+            'contact:email', 'released_on:date', 'published_at:datetime', 'category_id:foreign',
+        ]);
+
+        $this->assertValidPhp($this->baseDir . '/app/Models/Product.php');
+        $this->assertValidPhp($this->baseDir . '/app/Controllers/ProductController.php');
+        foreach (glob($this->baseDir . '/database/migrations/*.php') as $migration) {
+            $this->assertValidPhp($migration);
+        }
+    }
+
+    public function test_model_gets_timestamps_casts_and_belongs_to(): void
+    {
+        $this->generate(['Product', 'price:decimal', 'published_at:datetime', 'category_id:foreign']);
+
+        $model = file_get_contents($this->baseDir . '/app/Models/Product.php');
+        $this->assertStringContainsString('protected bool $timestamps = true;', $model);
+        $this->assertStringContainsString("'price' => 'decimal:2'", $model);
+        $this->assertStringContainsString("'published_at' => 'datetime'", $model);
+        $this->assertStringContainsString("'category_id' => 'int'", $model);
+        $this->assertStringContainsString('use Luany\\Database\\Relations\\BelongsTo;', $model);
+        $this->assertStringContainsString('public function category(): BelongsTo', $model);
+        $this->assertStringContainsString("return \$this->belongsTo(Category::class, 'category_id');", $model);
+    }
+
+    public function test_migration_has_unique_email_and_foreign_key(): void
+    {
+        $this->generate(['Order', 'contact:email', 'category_id:foreign']);
+
+        $migration = file_get_contents(glob($this->baseDir . '/database/migrations/*.php')[0]);
+        $this->assertStringContainsString('UNIQUE KEY `orders_contact_unique` (`contact`)', $migration);
+        $this->assertStringContainsString('FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`)', $migration);
+        $this->assertStringContainsString('`category_id` INT UNSIGNED NOT NULL', $migration);
+    }
+
+    public function test_controller_rules_unique_ignores_current_record_and_exists_for_foreign(): void
+    {
+        $this->generate(['Order', 'contact:email', 'category_id:foreign']);
+
+        $controller = file_get_contents($this->baseDir . '/app/Controllers/OrderController.php');
+        $this->assertStringContainsString("'unique:orders,contact']", $controller);
+        $this->assertStringContainsString("'unique:orders,contact,' . \$id]", $controller);
+        $this->assertStringContainsString("'exists:categories,id'", $controller);
+        $this->assertStringContainsString('$order->update($data);', $controller);
+    }
+
+    public function test_views_format_dates_and_booleans(): void
+    {
+        $this->generate(['Event', 'starts_at:datetime', 'day:date', 'public:boolean']);
+
+        $show = file_get_contents($this->baseDir . '/views/pages/events/show.lte');
+        $this->assertStringContainsString("{{ \$event->starts_at?->format('Y-m-d H:i') }}", $show);
+        $this->assertStringContainsString("{{ \$event->day?->format('Y-m-d') }}", $show);
+        $this->assertStringContainsString("{{ \$event->public ? 'Yes' : 'No' }}", $show);
+
+        $edit = file_get_contents($this->baseDir . '/views/pages/events/edit.lte');
+        $this->assertStringContainsString("value=\"{{ \$event->starts_at?->format('Y-m-d\\TH:i') }}\"", $edit);
+        $this->assertStringContainsString('type="datetime-local"', $edit);
+    }
+
+    public function test_foreign_field_must_end_in_id(): void
+    {
+        $this->expectException(\LuanyCli\Support\InvalidNameException::class);
+        $this->generate(['Order', 'category:foreign']);
+    }
+
+    public function test_pluralize_referenced_tables(): void
+    {
+        $this->assertSame('categories', \LuanyCli\Support\FieldParser::referencedTable('category_id'));
+        $this->assertSame('users', \LuanyCli\Support\FieldParser::referencedTable('user_id'));
+        $this->assertSame('addresses', \LuanyCli\Support\FieldParser::referencedTable('address_id'));
+        $this->assertSame('keys', \LuanyCli\Support\FieldParser::referencedTable('key_id'));
+    }
 }

@@ -151,6 +151,12 @@ final class NameValidator
             self::column($field['name']);
             self::fieldType($field['type'], $field['name']);
 
+            if ($field['type'] === 'foreign' && !preg_match('/^[a-z][a-z0-9_]*_id$/', $field['name'])) {
+                throw new InvalidNameException(
+                    "Foreign field [{$field['name']}] must end in _id (e.g. category_id:foreign)."
+                );
+            }
+
             if (isset($seen[$field['name']])) {
                 throw new InvalidNameException("Duplicate field name [{$field['name']}].");
             }
