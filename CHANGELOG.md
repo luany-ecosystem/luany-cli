@@ -6,7 +6,7 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
-## [Unreleased] — 1.5.1
+## [1.5.1] — 2026-11-11
 
 ### Fixed
 - A missing PDO extension (e.g. `pdo_sqlite` on Ubuntu, where it is a separate package) is explained with the install command for each platform instead of PDO's "could not find driver" — in `migrate*`, `db:seed`, `doctor` and `luany new`. `luany new` marks unavailable databases in its menu, skips the automatic migration and keeps `luany migrate` in the next steps.
