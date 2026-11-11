@@ -62,7 +62,8 @@ class MakeMigrationCommandTest extends TestCase
         $files   = glob($this->baseDir . '/database/migrations/*.php');
         $content = file_get_contents($files[0]);
 
-        $this->assertStringContainsString('class CreateBlogPostsTable', $content);
+        $this->assertStringContainsString('return new class extends Migration', $content);
+        $this->assertStringContainsString("create('blog_posts', function (Blueprint \$table)", $content);
     }
 
     public function test_command_name(): void
@@ -88,19 +89,24 @@ class MakeMigrationCommandTest extends TestCase
         $files   = glob($this->baseDir . '/database/migrations/*.php');
         $content = file_get_contents($files[0]);
 
-        $this->assertStringContainsString('`orders`', $content);
-        $this->assertStringNotContainsString('`example`', $content);
+        $this->assertStringContainsString("create('orders'", $content);
+        $this->assertStringContainsString("dropIfExists('orders')", $content);
     }
 
     public function test_table_name_for_non_standard_name(): void
     {
-        (new MakeMigrationCommand())->handle(['add_status_to_orders']);
+        (new MakeMigrationCommand())->handle(['add_status_to_orders_table']);
 
         $files   = glob($this->baseDir . '/database/migrations/*.php');
         $content = file_get_contents($files[0]);
 
-        // Fallback: usa o nome completo quando não bate o padrão create_X_table
-        $this->assertStringContainsString('`add_status_to_orders`', $content);
+        // add_*_to_{table}_table → alter template on that table
+        $this->assertStringContainsString("table('orders', function (Blueprint \$table)", $content);
+
+        (new MakeMigrationCommand())->handle(['backfill_slugs']);
+        $blank = file_get_contents(glob($this->baseDir . '/database/migrations/*_backfill_slugs.php')[0]);
+        $this->assertStringNotContainsString('schema(', $blank);
+        $this->assertStringContainsString('public function up(\\PDO $pdo): void', $blank);
     }
 
     // -- Name validation (#1) --------------------------------------------------

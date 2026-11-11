@@ -8,6 +8,14 @@ use LuanyCli\Env;
 
 class MigrateFreshCommand extends MigrateBaseCommand
 {
+    /**
+     * Interactive console (overridable in tests).
+     */
+    protected function console(): \LuanyCli\Support\Console
+    {
+        return new \LuanyCli\Support\Console();
+    }
+
     public function name(): string
     {
         return 'migrate:fresh';
@@ -23,12 +31,14 @@ class MigrateFreshCommand extends MigrateBaseCommand
     {
         $seed = in_array('--seed', $args, true);
 
-        echo "\n  \033[33m⚠\033[0m  This will drop all tables. Continue? [yes/no]: ";
-        $confirm = trim(fgets(STDIN));
+        $force = in_array('--force', $args, true);
 
-        if ($confirm !== 'yes') {
-            echo "\n  \033[33m→\033[0m  Aborted.\n\n";
-            exit(0);
+        if (!$force) {
+            echo "\n";
+            if (!$this->console()->confirm("\033[33m⚠\033[0m  This drops ALL tables. Continue?", false)) {
+                echo "\n  \033[33m→\033[0m  Aborted.\n\n";
+                return;
+            }
         }
 
         $this->loadProjectAutoload();

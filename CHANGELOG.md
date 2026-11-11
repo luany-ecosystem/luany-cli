@@ -6,6 +6,23 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [Unreleased] — 1.5.0
+
+### Added
+- **`luany new`** asks for the database (SQLite / MySQL / PostgreSQL) and git before composer runs; writes the `DB_*` settings to `.env`; with SQLite creates the database file and runs the migrations. Options `--database=`, `--git` / `--no-git`, `--no-migrate`, `-n`.
+- **Optional fields** in `make:feature`: `bio:text?` (inline or interactive) → `->nullable()`, `nullable` rule, non-required input.
+- `DB_CONNECTION=sqlite|mysql|pgsql` for `migrate`, `migrate:*`, `db:seed` and `doctor` (SQLite path relative to the project; default stays `mysql` for older projects).
+- `migrate:fresh --force`.
+- `Support\Console` (prompts with defaults, numbered choices, EOF-safe) and `Support\EnvWriter`.
+
+### Changed
+- **Portable migrations**: `make:feature` and `make:migration` generate anonymous-class migrations with the schema builder (luany/database ≥ 1.7) instead of MySQL SQL. `make:migration` picks a template: `create_X_table` → `create()`, `add_…_to_X_table` / `…_from_X_table` → `table()`, otherwise an empty migration.
+- **Interactive `make:feature`**: Enter = yes, fields as `name`, `name:type` or `name:type?`, numbered type menu with descriptions (`*_id` defaults to `foreign`), errors re-prompt instead of aborting, summary + confirmation before writing files; numbered layout menu.
+- `migrate:fresh` confirmation defaults to **No** and accepts y/yes.
+- `doctor` checks the `_migrations` table in a driver-independent way and shows the driver.
+
+---
+
 ## [1.4.0] — 2026-11-11
 
 ### Added

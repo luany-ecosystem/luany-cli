@@ -12,23 +12,38 @@ namespace LuanyCli\Support;
  *
  * Field names and types are validated by NameValidator before they get here.
  *
- * Types:
- *   string    VARCHAR(255)            text input
- *   text      TEXT                    textarea
- *   integer   INT                     number input        cast int
- *   decimal   DECIMAL(10,2)           number input        cast decimal:2
- *   boolean   TINYINT(1)              checkbox            cast bool
- *   email     VARCHAR(150) + unique   email input         unique rule
- *   date      DATE                    date input          cast date
- *   datetime  DATETIME                datetime-local      cast datetime
- *   foreign   INT UNSIGNED + FK       number input        cast int, exists rule,
+ * Types (schema builder column → form input → cast):
+ *   string    string()                 text input
+ *   text      text()                   textarea
+ *   integer   integer()                number input        cast int
+ *   decimal   decimal(10, 2)           number input        cast decimal:2
+ *   boolean   boolean()                checkbox            cast bool
+ *   email     string(150)->unique()    email input         unique rule
+ *   date      date()->nullable()       date input          cast date
+ *   datetime  dateTime()->nullable()   datetime-local      cast datetime
+ *   foreign   foreignId()->constrained() number input      cast int, exists rule,
  *             (name must end in _id)                      belongsTo relation
+ *
+ * A trailing "?" makes a field optional: bio:text? → ->nullable(), "nullable" rule.
  */
 class FieldParser
 {
     /** Valid types the developer can choose from. */
     public const TYPES = [
         'string', 'text', 'integer', 'decimal', 'boolean', 'email', 'date', 'datetime', 'foreign',
+    ];
+
+    /** Short descriptions for interactive prompts. */
+    public const TYPE_DESCRIPTIONS = [
+        'string'   => 'short text (255)',
+        'text'     => 'long text',
+        'integer'  => 'whole number',
+        'decimal'  => 'money / decimal (10,2)',
+        'boolean'  => 'yes / no (checkbox)',
+        'email'    => 'unique email address',
+        'date'     => 'date',
+        'datetime' => 'date and time',
+        'foreign'  => 'link to another table (name must end in _id)',
     ];
 
     private const INPUT_TYPES = [
@@ -41,12 +56,15 @@ class FieldParser
         'foreign'  => 'number',
     ];
 
-    // ── Migration ─────────────────────────────────────────────────────────────
+    // ── Migration (schema builder) ────────────────────────────────────────────
 
     /**
-     * @param array<int, array{name: string, type: string}> $fields
+     * Blueprint calls for the create-table migration (portable across
+     * MySQL, PostgreSQL and SQLite).
+     *
+     * @param array<int, array{name: string, type: string, nullable?: bool}> $fields
      */
-    public static function toMigrationColumns(array $fields): string
+    public static function toSchemaColumns(array $fields): string
     {
         if (empty($fields)) {
             return '';
@@ -54,50 +72,42 @@ class FieldParser
 
         $lines = [];
         foreach ($fields as $field) {
-            $lines[] = '                ' . self::migrationColumn($field['name'], $field['type']) . ',';
+            $lines[] = '            ' . self::schemaColumn($field) . ';';
         }
 
         return implode("\n", $lines) . "\n";
     }
 
     /**
-     * Indexes and foreign keys, appended after the last column (each line
-     * starts with a comma).
-     *
-     * @param array<int, array{name: string, type: string}> $fields
+     * @param array{name: string, type: string, nullable?: bool} $field
      */
-    public static function toMigrationConstraints(array $fields, string $table): string
+    private static function schemaColumn(array $field): string
     {
-        $lines = [];
+        $name     = $field['name'];
+        $nullable = !empty($field['nullable']);
 
-        foreach ($fields as $field) {
-            if ($field['type'] === 'email') {
-                $lines[] = "                UNIQUE KEY `{$table}_{$field['name']}_unique` (`{$field['name']}`)";
-            }
+        $column = match ($field['type']) {
+            'text'     => "\$table->text('{$name}')",
+            'integer'  => "\$table->integer('{$name}')" . ($nullable ? '' : '->default(0)'),
+            'decimal'  => "\$table->decimal('{$name}', 10, 2)" . ($nullable ? '' : '->default(0)'),
+            'boolean'  => "\$table->boolean('{$name}')->default(false)",
+            'email'    => "\$table->string('{$name}', 150)->unique()",
+            'date'     => "\$table->date('{$name}')",
+            'datetime' => "\$table->dateTime('{$name}')",
+            'foreign'  => "\$table->foreignId('{$name}')",
+            default    => "\$table->string('{$name}')",
+        };
 
-            if ($field['type'] === 'foreign') {
-                $references = self::referencedTable($field['name']);
-                $lines[] = "                CONSTRAINT `{$table}_{$field['name']}_foreign` FOREIGN KEY (`{$field['name']}`)"
-                    . " REFERENCES `{$references}` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE";
-            }
+        // date / datetime are optional by default (empty form inputs).
+        if ($nullable || in_array($field['type'], ['date', 'datetime'], true)) {
+            $column .= '->nullable()';
         }
 
-        return $lines === [] ? '' : ",\n" . implode(",\n", $lines);
-    }
+        if ($field['type'] === 'foreign') {
+            $column .= "->constrained('" . self::referencedTable($name) . "')";
+        }
 
-    private static function migrationColumn(string $name, string $type): string
-    {
-        return match ($type) {
-            'text'     => "`{$name}` TEXT",
-            'integer'  => "`{$name}` INT NOT NULL DEFAULT 0",
-            'boolean'  => "`{$name}` TINYINT(1) NOT NULL DEFAULT 0",
-            'email'    => "`{$name}` VARCHAR(150) NOT NULL",
-            'date'     => "`{$name}` DATE NULL",
-            'datetime' => "`{$name}` DATETIME NULL",
-            'decimal'  => "`{$name}` DECIMAL(10, 2) NOT NULL DEFAULT 0.00",
-            'foreign'  => "`{$name}` INT UNSIGNED NOT NULL",
-            default    => "`{$name}` VARCHAR(255) NOT NULL",
-        };
+        return $column;
     }
 
     /**
@@ -111,7 +121,7 @@ class FieldParser
     /**
      * Foreign fields whose referenced table has no migration yet.
      *
-     * @param array<int, array{name: string, type: string}> $fields
+     * @param array<int, array{name: string, type: string, nullable?: bool}> $fields
      * @param array<int, string>                            $existingTables
      * @return array<int, string>
      */
@@ -129,7 +139,7 @@ class FieldParser
     // ── Model ─────────────────────────────────────────────────────────────────
 
     /**
-     * @param array<int, array{name: string, type: string}> $fields
+     * @param array<int, array{name: string, type: string, nullable?: bool}> $fields
      */
     public static function toFillable(array $fields): string
     {
@@ -144,7 +154,7 @@ class FieldParser
     }
 
     /**
-     * @param array<int, array{name: string, type: string}> $fields
+     * @param array<int, array{name: string, type: string, nullable?: bool}> $fields
      */
     public static function toCasts(array $fields): string
     {
@@ -174,7 +184,7 @@ class FieldParser
     /**
      * belongsTo() methods for foreign fields: category_id → category().
      *
-     * @param array<int, array{name: string, type: string}> $fields
+     * @param array<int, array{name: string, type: string, nullable?: bool}> $fields
      */
     public static function toRelations(array $fields): string
     {
@@ -201,7 +211,7 @@ class FieldParser
     /**
      * use statements needed by the generated model.
      *
-     * @param array<int, array{name: string, type: string}> $fields
+     * @param array<int, array{name: string, type: string, nullable?: bool}> $fields
      */
     public static function toModelImports(array $fields): string
     {
@@ -220,7 +230,7 @@ class FieldParser
      * Rules for store() (no $updating) or update() ($updating: unique rules
      * ignore the record being edited, whose id is in $id).
      *
-     * @param array<int, array{name: string, type: string}> $fields
+     * @param array<int, array{name: string, type: string, nullable?: bool}> $fields
      */
     public static function toValidationRules(array $fields, string $table = '', bool $updating = false): string
     {
@@ -247,6 +257,11 @@ class FieldParser
                 'foreign'  => "'required', 'integer', 'exists:" . self::referencedTable($name) . ",id'",
                 default    => "'required'",
             };
+            if (!empty($field['nullable'])) {
+                $rules = str_starts_with($rules, "'required'")
+                    ? "'nullable'" . substr($rules, strlen("'required'"))
+                    : (str_starts_with($rules, "'nullable'") || $field['type'] === 'boolean' ? $rules : "'nullable', " . $rules);
+            }
             $lines[] = "            '{$name}' => [{$rules}],";
         }
 
@@ -256,7 +271,7 @@ class FieldParser
     // ── Views ─────────────────────────────────────────────────────────────────
 
     /**
-     * @param array<int, array{name: string, type: string}> $fields
+     * @param array<int, array{name: string, type: string, nullable?: bool}> $fields
      */
     public static function toFormFields(array $fields): string
     {
@@ -270,7 +285,7 @@ class FieldParser
     /**
      * Form fields pre-filled with the current values of $item.
      *
-     * @param array<int, array{name: string, type: string}> $fields
+     * @param array<int, array{name: string, type: string, nullable?: bool}> $fields
      */
     public static function toEditFields(array $fields, string $item): string
     {
@@ -282,7 +297,7 @@ class FieldParser
     }
 
     /**
-     * @param array<int, array{name: string, type: string}> $fields
+     * @param array<int, array{name: string, type: string, nullable?: bool}> $fields
      */
     public static function toShowFields(array $fields, string $item): string
     {
@@ -299,7 +314,7 @@ class FieldParser
     }
 
     /**
-     * @param array<int, array{name: string, type: string}> $fields
+     * @param array<int, array{name: string, type: string, nullable?: bool}> $fields
      */
     public static function toIndexHeaders(array $fields): string
     {
@@ -314,7 +329,7 @@ class FieldParser
     }
 
     /**
-     * @param array<int, array{name: string, type: string}> $fields
+     * @param array<int, array{name: string, type: string, nullable?: bool}> $fields
      */
     public static function toIndexRows(array $fields, string $item): string
     {
@@ -341,7 +356,7 @@ class FieldParser
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     /**
-     * @param array{name: string, type: string} $field
+     * @param array{name: string, type: string, nullable?: bool} $field
      */
     private static function formField(array $field, ?string $item): string
     {
@@ -350,7 +365,7 @@ class FieldParser
 
         if ($field['type'] === 'text') {
             $value = $item === null ? '' : "{{ \${$item}->{$name} }}";
-            $req   = $item === null ? ' required' : '';
+            $req   = $item === null && empty($field['nullable']) ? ' required' : '';
             return "                <div class=\"form-group\">\n"
                 . "                    <label for=\"{$name}\">{$label}</label>\n"
                 . "                    <textarea name=\"{$name}\" id=\"{$name}\" class=\"form-control\" placeholder=\"Enter {$label}\"{$req}>{$value}</textarea>\n"
@@ -374,7 +389,7 @@ class FieldParser
             default   => '',
         };
         // Create forms mark fields required; edit forms leave it to server validation.
-        $required = $item === null && !in_array($field['type'], ['date', 'datetime'], true) ? ' required' : '';
+        $required = $item === null && empty($field['nullable']) && !in_array($field['type'], ['date', 'datetime'], true) ? ' required' : '';
 
         $value = '';
         if ($item !== null) {
@@ -394,7 +409,7 @@ class FieldParser
     /**
      * Template expression that prints a field (dates formatted, booleans as Yes/No).
      *
-     * @param array{name: string, type: string} $field
+     * @param array{name: string, type: string, nullable?: bool} $field
      */
     private static function displayValue(array $field, string $item): string
     {

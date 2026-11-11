@@ -43,6 +43,7 @@ class MakeFeatureCommandTest extends TestCase
     private function makeCommand(array $fields = []): MakeFeatureCommand
     {
         return new class($fields) extends MakeFeatureCommand {
+            protected function console(): \LuanyCli\Support\Console { return new \LuanyCli\Support\Console(fopen('php://memory', 'r'), false); }
             public function __construct(private array $testFields) {}
             protected function collectFields(): array { return $this->testFields; }
         };
@@ -53,6 +54,7 @@ class MakeFeatureCommandTest extends TestCase
     public function test_name_is_make_feature(): void
     {
         $this->assertSame('make:feature', (new class([]) extends MakeFeatureCommand {
+            protected function console(): \LuanyCli\Support\Console { return new \LuanyCli\Support\Console(fopen('php://memory', 'r'), false); }
             protected function collectFields(): array { return []; }
         })->name());
     }
@@ -101,7 +103,8 @@ class MakeFeatureCommandTest extends TestCase
 
         $files = glob($this->baseDir . '/database/migrations/*_create_posts_table.php');
         $this->assertCount(1, $files);
-        $this->assertStringContainsString('class CreatePostsTable', file_get_contents($files[0]));
+        $this->assertStringContainsString('return new class extends Migration', file_get_contents($files[0]));
+        $this->assertStringContainsString("create('posts', function (Blueprint \$table)", file_get_contents($files[0]));
     }
 
     public function test_generates_views_without_fields(): void
@@ -191,8 +194,8 @@ class MakeFeatureCommandTest extends TestCase
 
         $files     = glob($this->baseDir . '/database/migrations/*_create_posts_table.php');
         $migration = file_get_contents($files[0]);
-        $this->assertStringContainsString('`title` VARCHAR(255)', $migration);
-        $this->assertStringContainsString('`body` TEXT',          $migration);
+        $this->assertStringContainsString("\$table->string('title');", $migration);
+        $this->assertStringContainsString("\$table->text('body');",    $migration);
     }
 
     public function test_create_view_has_form_fields(): void
@@ -336,6 +339,7 @@ class MakeFeatureCommandTest extends TestCase
     public function test_inline_fields_skips_interactive(): void
     {
         $command = new class extends MakeFeatureCommand {
+            protected function console(): \LuanyCli\Support\Console { return new \LuanyCli\Support\Console(fopen('php://memory', 'r'), false); }
             protected function collectFields(): array {
                 throw new \RuntimeException('Should not be called');
             }
@@ -379,6 +383,7 @@ class MakeFeatureCommandTest extends TestCase
     {
         $before  = $this->projectFiles();
         $command = new class extends MakeFeatureCommand {
+            protected function console(): \LuanyCli\Support\Console { return new \LuanyCli\Support\Console(fopen('php://memory', 'r'), false); }
             protected function collectFields(): array {
                 throw new \RuntimeException('Should not be called');
             }
@@ -504,6 +509,7 @@ class MakeFeatureCommandTest extends TestCase
     private function generate(array $args): void
     {
         $command = new class extends MakeFeatureCommand {
+            protected function console(): \LuanyCli\Support\Console { return new \LuanyCli\Support\Console(fopen('php://memory', 'r'), false); }
             protected function collectFields(): array { return []; }
         };
         ob_start();
@@ -548,14 +554,13 @@ class MakeFeatureCommandTest extends TestCase
         $this->assertStringContainsString("return \$this->belongsTo(Category::class, 'category_id');", $model);
     }
 
-    public function test_migration_has_unique_email_and_foreign_key(): void
+    public function test_migration_uses_schema_builder_for_unique_email_and_foreign_key(): void
     {
         $this->generate(['Order', 'contact:email', 'category_id:foreign']);
 
         $migration = file_get_contents(glob($this->baseDir . '/database/migrations/*.php')[0]);
-        $this->assertStringContainsString('UNIQUE KEY `orders_contact_unique` (`contact`)', $migration);
-        $this->assertStringContainsString('FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`)', $migration);
-        $this->assertStringContainsString('`category_id` INT UNSIGNED NOT NULL', $migration);
+        $this->assertStringContainsString("\$table->string('contact', 150)->unique();", $migration);
+        $this->assertStringContainsString("\$table->foreignId('category_id')->constrained('categories');", $migration);
     }
 
     public function test_controller_rules_unique_ignores_current_record_and_exists_for_foreign(): void
@@ -595,5 +600,68 @@ class MakeFeatureCommandTest extends TestCase
         $this->assertSame('users', \LuanyCli\Support\FieldParser::referencedTable('user_id'));
         $this->assertSame('addresses', \LuanyCli\Support\FieldParser::referencedTable('address_id'));
         $this->assertSame('keys', \LuanyCli\Support\FieldParser::referencedTable('key_id'));
+    }
+
+    // -- Interactive mode --------------------------------------------------------
+
+    private function interactive(string $input): MakeFeatureCommand
+    {
+        return new class ($input) extends MakeFeatureCommand {
+            /** @var resource|null */
+            private $stream = null;
+            public function __construct(private string $input) {}
+            protected function console(): \LuanyCli\Support\Console
+            {
+                if ($this->stream === null) {
+                    $this->stream = fopen('php://memory', 'r+');
+                    fwrite($this->stream, $this->input);
+                    rewind($this->stream);
+                }
+                return new \LuanyCli\Support\Console($this->stream, false);
+            }
+        };
+    }
+
+    public function test_interactive_fields_types_by_number_shortcuts_and_optional(): void
+    {
+        // Add fields? (Enter = yes) | title → type menu "1" (string) | price:decimal | bio:text? |
+        // bad name → error, retry | category_id (type defaults to foreign) | finish | confirm
+        $input = "\ntitle\n1\nprice:decimal\nbio:text?\n1bad\ncategory_id\n\n\n\n";
+
+        ob_start();
+        try {
+            $this->interactive($input)->handle(['Product']);
+        } finally {
+            $out = ob_get_clean();
+        }
+
+        $this->assertStringContainsString('optional', $out);
+        $migration = file_get_contents(glob($this->baseDir . '/database/migrations/*_create_products_table.php')[0]);
+        $this->assertStringContainsString("\$table->string('title');", $migration);
+        $this->assertStringContainsString("\$table->decimal('price', 10, 2)->default(0);", $migration);
+        $this->assertStringContainsString("\$table->text('bio')->nullable();", $migration);
+        $this->assertStringContainsString("\$table->foreignId('category_id')->constrained('categories');", $migration);
+    }
+
+    public function test_interactive_summary_can_abort(): void
+    {
+        ob_start();
+        try {
+            $this->interactive("y\ntitle:string\n\nn\n")->handle(['Note']);
+        } finally {
+            $out = ob_get_clean();
+        }
+
+        $this->assertStringContainsString('Aborted', $out);
+        $this->assertFileDoesNotExist($this->baseDir . '/app/Models/Note.php');
+    }
+
+    public function test_inline_optional_field(): void
+    {
+        $this->generate(['Profile', 'bio:text?', 'age:integer?']);
+
+        $controller = file_get_contents($this->baseDir . '/app/Controllers/ProfileController.php');
+        $this->assertStringContainsString("'bio' => ['nullable', 'string']", $controller);
+        $this->assertStringContainsString("'age' => ['nullable', 'integer']", $controller);
     }
 }
