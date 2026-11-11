@@ -63,14 +63,10 @@ class {{Model}}Controller extends Controller
         }
 
         $data = validate($request->body(), [
-{{validation_rules}}
+{{validation_rules_update}}
         ], '/{{slug}}/' . $id . '/edit');
 
-        foreach ($data as $key => $value) {
-            ${{item}}->$key = $value;
-        }
-
-        ${{item}}->save();
+        ${{item}}->update($data);
         flash('success', '{{Model}} updated successfully.');
 
         return redirect('/{{slug}}/' . $id);

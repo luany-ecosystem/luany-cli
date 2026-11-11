@@ -57,7 +57,7 @@ class FieldParserTest extends TestCase
         $result = FieldParser::toCasts($this->fields());
         $this->assertStringContainsString("'published' => 'bool'", $result);
         $this->assertStringContainsString("'score' => 'int'",      $result);
-        $this->assertStringContainsString("'price' => 'float'",    $result);
+        $this->assertStringContainsString("'price' => 'decimal:2'",    $result);
     }
 
     public function test_casts_empty_when_no_castable_fields(): void

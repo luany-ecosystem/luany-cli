@@ -6,6 +6,24 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [Unreleased] — 1.3.0
+
+### Added
+- `make:feature` field types **`datetime`** and **`foreign`** (`category_id:foreign` → `INT UNSIGNED` column, foreign key to `categories(id)`, `exists:categories,id` rule, `category(): BelongsTo` relation, warning when the referenced table has no migration yet).
+- `email` fields get a unique index and a `unique:{table},{column}` rule; the update rule ignores the record being edited.
+- Generated models enable `$timestamps` (luany/database ≥ 1.3).
+
+### Changed
+- `decimal` fields cast to `decimal:2` instead of `float` (no precision loss); `date` fields cast to `date`.
+- Views format `date` / `datetime` values and show booleans as Yes/No (casted dates are objects).
+- Generated `update()` uses `$model->update($data)`.
+- Edit forms pre-fill date inputs in the format the browser expects.
+
+### Fixed
+- Corrupted (double-encoded UTF-8) comments in `FieldParser`.
+
+---
+
 ## [1.2.1] — 2026-11-10
 
 ### Fixed

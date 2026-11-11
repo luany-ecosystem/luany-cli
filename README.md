@@ -299,7 +299,7 @@ Colours: GET = green, POST = yellow, PUT/PATCH = blue, DELETE = red.
 luany make:feature Product
 
 # Inline mode (no prompts)
-luany make:feature Product name:string price:decimal active:boolean
+luany make:feature Product name:string price:decimal active:boolean category_id:foreign
 ```
 
 Scaffolds a complete feature interactively or via inline fields:
@@ -310,10 +310,10 @@ Scaffolds a complete feature interactively or via inline fields:
   Add fields? [yes/no]: yes
 
   Field name (or 'done' to finish): name
-  Type [string/text/integer/boolean/email/date/decimal]: string
+  Type [string/text/integer/decimal/boolean/email/date/datetime/foreign]: string
 
   Field name (or 'done' to finish): price
-  Type [string/text/integer/boolean/email/date/decimal]: decimal
+  Type [string/text/integer/decimal/boolean/email/date/datetime/foreign]: decimal
 
   Field name (or 'done' to finish): done
 
@@ -340,15 +340,25 @@ Scaffolds a complete feature interactively or via inline fields:
 
 Generates in one command: model with `$fillable` and `$casts`, controller with full CRUD using `validate()` and `abort()`, migration with all columns, four LTE views with design tokens, and a `Route::resource` entry in `routes/http.php`.
 
-| Field type | Migration       | Form input           | Cast    | Behavior                                  |
-| ---------- | --------------- | -------------------- | ------- | ----------------------------------------- |
-| `string`   | `VARCHAR(255)`  | `text`               | —       | `required`, `placeholder="Enter {Label}"` |
-| `text`     | `TEXT`          | `textarea`           | —       | `required`, `placeholder="Enter {Label}"` |
-| `integer`  | `INT`           | `number`             | `int`   | `required`, `placeholder="Enter {Label}"` |
-| `boolean`  | `TINYINT(1)`    | `checkbox`           | `bool`  | no `required`/placeholder                 |
-| `email`    | `VARCHAR(150)`  | `email`              | —       | `required`, `placeholder="Enter {Label}"` |
-| `date`     | `DATE`          | `date`               | —       | `required`, `placeholder="Enter {Label}"` |
-| `decimal`  | `DECIMAL(10,2)` | `number step="0.01"` | `float` | `required`, `placeholder="Enter {Label}"` |
+| Field type | Migration                     | Form input       | Cast        | Validation (store / update)                         |
+| ---------- | ----------------------------- | ---------------- | ----------- | --------------------------------------------------- |
+| `string`   | `VARCHAR(255)`                | `text`           | —           | `required, string, max:255`                         |
+| `text`     | `TEXT`                        | `textarea`       | —           | `required, string`                                  |
+| `integer`  | `INT`                         | `number`         | `int`       | `required, integer`                                 |
+| `decimal`  | `DECIMAL(10,2)`               | `number` step .01| `decimal:2` | `required, numeric`                                 |
+| `boolean`  | `TINYINT(1)`                  | checkbox         | `bool`      | `boolean` (unchecked → `false`)                     |
+| `email`    | `VARCHAR(150)` + unique index | `email`          | —           | `required, email, unique:{table}` (update ignores the current row) |
+| `date`     | `DATE NULL`                   | `date`           | `date`      | `nullable, date`                                    |
+| `datetime` | `DATETIME NULL`               | `datetime-local` | `datetime`  | `nullable, date`                                    |
+| `foreign`  | `INT UNSIGNED` + foreign key  | `number`         | `int`       | `required, integer, exists:{referenced},id`         |
+
+`foreign` fields must end in `_id`: `category_id:foreign` references `categories(id)`
+and adds a `category(): BelongsTo` relation to the model. The command warns when no
+migration creates the referenced table yet.
+
+Generated models set `$timestamps = true` (the model writes `created_at` /
+`updated_at`). Views format dates and show booleans as Yes/No. Requires
+luany/database ≥ 1.3 and luany/framework ≥ 1.2.
 
 ## Requirements
 

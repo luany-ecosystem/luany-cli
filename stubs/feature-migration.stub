@@ -11,7 +11,7 @@ class Create{{Models}}Table extends Migration
                 `id`         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
 {{migration_columns}}
                 `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP{{migration_constraints}}
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         ");
     }

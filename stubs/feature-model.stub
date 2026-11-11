@@ -2,16 +2,18 @@
 
 namespace App\Models;
 
-use Luany\Database\Model;
+{{model_imports}}use Luany\Database\Model;
 
 class {{Model}} extends Model
 {
     protected string $table = '{{table}}';
+
+    /** created_at / updated_at are written by the model. */
+    protected bool $timestamps = true;
 
     protected array $fillable = [
 {{fillable}}
     ];
 
     protected array $hidden = [];
-{{casts}}
-}
+{{casts}}{{relations}}}
