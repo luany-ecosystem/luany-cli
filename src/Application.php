@@ -4,6 +4,7 @@ namespace LuanyCli;
 
 use LuanyCli\Commands\AboutCommand;
 use LuanyCli\Commands\CacheClearCommand;
+use LuanyCli\Commands\ViewCheckCommand;
 use LuanyCli\Commands\DevCommand;
 use LuanyCli\Commands\DoctorCommand;
 use LuanyCli\Commands\KeyGenerateCommand;
@@ -108,6 +109,7 @@ class Application
         $registry->register(new RouteListCommand());
         $registry->register(new KeyGenerateCommand());
         $registry->register(new CacheClearCommand());
+        $registry->register(new ViewCheckCommand());
         $registry->register(new AboutCommand());
         $registry->register(new ListCommand($registry));
         $registry->register(new NewCommand());

@@ -83,6 +83,7 @@ luany <command> [arguments]
 | `route:list`                                 | Display all registered routes in a table                                  |
 | `key:generate`                               | Generate and set APP_KEY in .env                                          |
 | `cache:clear`                                | Clear compiled view cache                                                 |
+| `view:check [--path=views] [--format=github]` | Validate all LTE views (structure + PHP syntax) without rendering          |
 
 ## luany new
 
@@ -266,6 +267,36 @@ Generates a PHPUnit test class with `setUp`, `tearDown` and a placeholder test m
 ```bash
 luany make:test UserTest
 luany make:test Feature/UserControllerTest    # → tests/Feature/UserControllerTest.php
+```
+
+## luany view:check
+
+Validates every `.lte` view of the project **without rendering** (requires luany/lte ≥ 1.2):
+unclosed / stray / crossed block directives, misplaced `@else` / `@empty`, missing
+arguments, and PHP syntax errors inside `{{ }}`, `{!! !!}`, `@php` and directive arguments.
+
+```bash
+luany view:check
+
+  →  Checking 24 view(s) in views/
+
+  ✗  views/pages/users/show.lte:12:5
+     Unclosed @foreach: missing @endforeach.
+  ✗  views/pages/users/edit.lte:7:23
+     PHP syntax error in {{ }} on line 7, column 23: syntax error, unexpected token "}".
+
+  ✗  2 of 24 view(s) have errors.
+```
+
+The application is booted (as `public/index.php` does) so directives registered by your
+service providers are recognised; nothing is rendered and no database connection is
+opened. Use `--no-app` to skip booting, `--path=…` for another views directory.
+
+Exits with code 1 on errors, so it fits CI. On GitHub Actions, `--format=github` turns
+each error into an inline annotation on the pull request:
+
+```yaml
+- run: vendor/bin/luany view:check --format=github
 ```
 
 ## luany route:list
