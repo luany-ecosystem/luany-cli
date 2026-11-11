@@ -6,7 +6,7 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
-## [Unreleased] — 1.3.0
+## [1.3.0] — 2026-11-11
 
 ### Added
 - `make:feature` field types **`datetime`** and **`foreign`** (`category_id:foreign` → `INT UNSIGNED` column, foreign key to `categories(id)`, `exists:categories,id` rule, `category(): BelongsTo` relation, warning when the referenced table has no migration yet).
