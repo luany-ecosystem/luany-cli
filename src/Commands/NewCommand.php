@@ -5,6 +5,7 @@ namespace LuanyCli\Commands;
 use LuanyCli\BaseCommand;
 use LuanyCli\Env;
 use LuanyCli\Support\Console;
+use LuanyCli\Support\DriverCheck;
 use LuanyCli\Support\EnvWriter;
 
 class NewCommand extends BaseCommand
@@ -55,9 +56,9 @@ class NewCommand extends BaseCommand
         // Ask everything up front, so the user can walk away during composer.
         $database = $options['database']
             ?? ($interactive ? $io->choice('Database', [
-                'sqlite' => 'file-based, nothing to install (recommended to start)',
-                'mysql'  => 'MySQL / MariaDB server',
-                'pgsql'  => 'PostgreSQL server',
+                'sqlite' => 'file-based, nothing to install (recommended to start)' . $this->missingTag('sqlite'),
+                'mysql'  => 'MySQL / MariaDB server' . $this->missingTag('mysql'),
+                'pgsql'  => 'PostgreSQL server' . $this->missingTag('pgsql'),
             ], 'sqlite') : 'sqlite');
 
         $credentials = [];
@@ -71,6 +72,9 @@ class NewCommand extends BaseCommand
 
         echo "\n  \033[33m→\033[0m  Creating Luany project [{$name}]...\n\n";
 
+        // Lets the skeleton's post-install script leave the summary to us.
+        putenv('LUANY_CLI=1');
+
         if (!$this->createProject($name)) {
             fwrite(STDERR, "\n  \033[31m✗\033[0m  Project creation failed.\n\n");
             $this->terminate(1);
@@ -81,8 +85,13 @@ class NewCommand extends BaseCommand
         $this->configureDatabase($target, $database, $credentials);
         $io->info("Database: {$database}");
 
-        if ($database === 'sqlite' && !$options['no-migrate']) {
-            $this->migrate($target);
+        $driverProblem = $this->driverProblem($database);
+        $migrated      = false;
+
+        if ($driverProblem !== null) {
+            $io->error($driverProblem);
+        } elseif ($database === 'sqlite' && !$options['no-migrate']) {
+            $migrated = $this->migrate($target);
         }
 
         if ($git && $this->gitAvailable()) {
@@ -95,7 +104,7 @@ class NewCommand extends BaseCommand
         if ($database !== 'sqlite') {
             echo "    \033[2m# create the database, check .env, then:\033[0m\n";
             echo "    luany migrate\n";
-        } elseif ($options['no-migrate']) {
+        } elseif (!$migrated) {
             echo "    luany migrate\n";
         }
         echo "    luany dev        \033[2m→ http://localhost:8000\033[0m\n\n";
@@ -132,11 +141,11 @@ class NewCommand extends BaseCommand
     /**
      * Run the new project's migrations in-process (SQLite needs no server).
      */
-    protected function migrate(string $target): void
+    protected function migrate(string $target): bool
     {
         $autoload = $target . '/vendor/autoload.php';
         if (!is_file($autoload)) {
-            return;
+            return false;
         }
 
         require_once $autoload;
@@ -145,11 +154,26 @@ class NewCommand extends BaseCommand
 
         try {
             (new MigrateCommand())->handle([]);
+            return true;
         } catch (\Throwable $e) {
             $this->console()->error('Migrations failed: ' . $e->getMessage() . ' — run "luany migrate" inside the project.');
+            return false;
         } finally {
             Env::setBasePath($previous);
         }
+    }
+
+    /**
+     * Explanation when the PHP PDO extension for $driver is missing (overridable in tests).
+     */
+    protected function driverProblem(string $driver): ?string
+    {
+        return DriverCheck::problem($driver);
+    }
+
+    private function missingTag(string $driver): string
+    {
+        return $this->driverProblem($driver) === null ? '' : '  (PHP extension missing)';
     }
 
     /**

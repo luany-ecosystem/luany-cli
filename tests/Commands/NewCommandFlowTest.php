@@ -50,7 +50,9 @@ class NewCommandFlowTest extends TestCase
 
             protected function isInteractive(): bool { return $this->tty; }
             protected function gitAvailable(): bool { return false; }
-            protected function migrate(string $target): void { $this->migrated = true; }
+            public bool $driverMissing = false;
+            protected function migrate(string $target): bool { $this->migrated = true; return true; }
+            protected function driverProblem(string $driver): ?string { return $this->driverMissing ? "pdo_{$driver} missing" : null; }
             protected function terminate(int $code): void { $this->exit = $code; }
         };
     }
@@ -119,5 +121,16 @@ class NewCommandFlowTest extends TestCase
         $cmd->handle(['taken']);
         ob_end_clean();
         $this->assertSame(1, $cmd->exit);
+    }
+
+    public function test_missing_driver_skips_migrations_and_keeps_the_step(): void
+    {
+        $cmd = $this->command('', false);
+        $cmd->driverMissing = true;
+        $out = $this->exec($cmd, ['shop']);
+
+        $this->assertFalse($cmd->migrated);
+        $this->assertStringContainsString('pdo_sqlite missing', $out);
+        $this->assertStringContainsString('luany migrate', $out);
     }
 }
