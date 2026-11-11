@@ -89,10 +89,25 @@ luany <command> [arguments]
 
 ```bash
 luany new my-app
+luany new my-app --database=pgsql --git        # skip the questions
+luany new my-app -n                            # non-interactive: SQLite, migrated
 ```
 
-Creates a new Luany project in a `my-app/` directory. Equivalent to
-`composer create-project luany/luany my-app` but with a guided experience.
+Creates the project, then asks a few questions **before** composer runs:
+
+```
+  Database
+   ›  1  sqlite     file-based, nothing to install (recommended to start)
+      2  mysql      MySQL / MariaDB server
+      3  pgsql      PostgreSQL server
+  Choose 1-3 or a name [sqlite]:
+  Initialize a git repository? [Y/n]:
+```
+
+- **SQLite**: the database file is created and the migrations run — `luany dev` works right away.
+- **MySQL / PostgreSQL**: host, port, database, user and password are written to `.env`; run `luany migrate` once the database exists.
+
+Options: `--database=sqlite|mysql|pgsql`, `--git` / `--no-git`, `--no-migrate`, `-n` / `--no-interaction`.
 
 ## luany doctor
 
@@ -338,15 +353,27 @@ Scaffolds a complete feature interactively or via inline fields:
 ```
   Using layout: layouts.main
 
-  Add fields? [yes/no]: yes
+  Add fields? [Y/n]:
 
-  Field name (or 'done' to finish): name
-  Type [string/text/integer/decimal/boolean/email/date/datetime/foreign]: string
+  Field: name
+  Type of [name]
+   ›  1  string     short text (255)
+      2  text       long text
+      …
+  Choose 1-9 or a name [string]: 1
+  ✓  name string
+  Field: price:decimal
+  ✓  price decimal
+  Field: bio:text?
+  ✓  bio text, optional
+  Field:
 
-  Field name (or 'done' to finish): price
-  Type [string/text/integer/decimal/boolean/email/date/datetime/foreign]: decimal
+  Product  (table products)
+    name                 string
+    price                decimal
+    bio                  text      optional
 
-  Field name (or 'done' to finish): done
+  Generate model, migration, controller, views and routes? [Y/n]:
 
   →  Creating feature [Product]...
 
@@ -382,6 +409,12 @@ Generates in one command: model with `$fillable` and `$casts`, controller with f
 | `date`     | `DATE NULL`                   | `date`           | `date`      | `nullable, date`                                    |
 | `datetime` | `DATETIME NULL`               | `datetime-local` | `datetime`  | `nullable, date`                                    |
 | `foreign`  | `INT UNSIGNED` + foreign key  | `number`         | `int`       | `required, integer, exists:{referenced},id`         |
+
+Append `?` to make a field optional (`bio:text?`, also inline): the column becomes
+`->nullable()`, the rule `nullable` and the form input not required.
+
+Migrations use the portable schema builder (anonymous classes), so they run on SQLite,
+MySQL and PostgreSQL.
 
 `foreign` fields must end in `_id`: `category_id:foreign` references `categories(id)`
 and adds a `category(): BelongsTo` relation to the model. The command warns when no

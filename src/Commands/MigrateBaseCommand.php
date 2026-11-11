@@ -33,19 +33,53 @@ abstract class MigrateBaseCommand extends BaseCommand
 
     protected function pdo(): \PDO
     {
-        $env = $this->env();
+        return self::connect($this->env(), Env::basePath());
+    }
 
-        $dsn = sprintf(
-            'mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4',
-            $env->get('DB_HOST', '127.0.0.1'),
-            $env->get('DB_PORT', '3306'),
-            $env->get('DB_NAME', 'luany'),
-        );
-
-        return new \PDO($dsn, $env->get('DB_USER', 'root'), $env->get('DB_PASS', ''), [
+    /**
+     * PDO for DB_CONNECTION = sqlite | mysql | pgsql (default mysql, as in
+     * projects created before SQLite became the skeleton default).
+     */
+    public static function connect(\LuanyCli\Support\EnvRepository $env, string $basePath): \PDO
+    {
+        $driver  = strtolower((string) $env->get('DB_CONNECTION', 'mysql'));
+        $options = [
             \PDO::ATTR_ERRMODE            => \PDO::ERRMODE_EXCEPTION,
             \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
-        ]);
+        ];
+
+        switch ($driver) {
+            case 'sqlite':
+                $path = (string) $env->get('DB_NAME', 'database/database.sqlite');
+                if ($path !== ':memory:' && !str_starts_with($path, '/') && preg_match('/^[A-Za-z]:[\\\\\/]/', $path) !== 1) {
+                    $path = rtrim($basePath, '/\\') . '/' . $path;
+                }
+                if ($path !== ':memory:' && !is_dir(dirname($path))) {
+                    mkdir(dirname($path), 0755, true);
+                }
+                return new \PDO('sqlite:' . $path, null, null, $options);
+
+            case 'pgsql':
+                $dsn = sprintf(
+                    'pgsql:host=%s;port=%s;dbname=%s',
+                    $env->get('DB_HOST', '127.0.0.1'),
+                    $env->get('DB_PORT', '5432'),
+                    $env->get('DB_NAME', 'luany'),
+                );
+                return new \PDO($dsn, $env->get('DB_USER', 'postgres'), $env->get('DB_PASS', ''), $options);
+
+            case 'mysql':
+                $dsn = sprintf(
+                    'mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4',
+                    $env->get('DB_HOST', '127.0.0.1'),
+                    $env->get('DB_PORT', '3306'),
+                    $env->get('DB_NAME', 'luany'),
+                );
+                return new \PDO($dsn, $env->get('DB_USER', 'root'), $env->get('DB_PASS', ''), $options);
+
+            default:
+                throw new \InvalidArgumentException("Unsupported DB_CONNECTION [{$driver}] — use sqlite, mysql or pgsql.");
+        }
     }
 
     /**
@@ -65,7 +99,7 @@ abstract class MigrateBaseCommand extends BaseCommand
             exit(1);
         }
 
-        if (!$env->hasFile() && !$env->has('DB_HOST') && !$env->has('DB_NAME')) {
+        if (!$env->hasFile() && !$env->has('DB_HOST') && !$env->has('DB_NAME') && !$env->has('DB_CONNECTION')) {
             fwrite(STDERR, "\n  \033[31m✗\033[0m  .env not found and no DB_* environment variables set. Run: luany key:generate\n\n");
             exit(1);
         }

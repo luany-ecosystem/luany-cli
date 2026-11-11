@@ -143,7 +143,7 @@ class DoctorCommand extends BaseCommand
             return;
         }
 
-        if (!$env->hasFile() && !$env->has('DB_HOST') && !$env->has('DB_NAME')) {
+        if (!$env->hasFile() && !$env->has('DB_HOST') && !$env->has('DB_NAME') && !$env->has('DB_CONNECTION')) {
             printf("  \033[31m✗\033[0m  %-30s %s\n", 'database connection', '.env not found and no DB_* environment variables');
             return;
         }
@@ -153,19 +153,16 @@ class DoctorCommand extends BaseCommand
             : '';
 
         try {
-            $dsn = sprintf(
-                'mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4',
-                $env->get('DB_HOST', '127.0.0.1'),
-                $env->get('DB_PORT', '3306'),
-                $env->get('DB_NAME', 'luany'),
-            );
-            $pdo = new \PDO($dsn, $env->get('DB_USER', 'root'), $env->get('DB_PASS', ''), [
-                \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
-            ]);
-            printf("  \033[32m✓\033[0m  %-30s %s\n", 'database connection', 'ok' . $source);
+            $pdo    = \LuanyCli\Commands\MigrateBaseCommand::connect($env, $base);
+            $driver = (string) $pdo->getAttribute(\PDO::ATTR_DRIVER_NAME);
+            printf("  \033[32m✓\033[0m  %-30s %s\n", 'database connection', "ok ({$driver}){$source}");
 
-            $tables = $pdo->query("SHOW TABLES LIKE '_migrations'")->fetchAll();
-            $exists = !empty($tables);
+            try {
+                $pdo->query('SELECT 1 FROM _migrations LIMIT 1');
+                $exists = true;
+            } catch (\PDOException) {
+                $exists = false;
+            }
             $icon   = $exists ? "\033[32m✓\033[0m" : "\033[33m⚠\033[0m";
             $value  = $exists ? 'found' : 'not found — run: luany migrate';
             printf("  %s  %-30s %s\n", $icon, '_migrations table', $value);

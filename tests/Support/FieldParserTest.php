@@ -16,27 +16,44 @@ class FieldParserTest extends TestCase
         ];
     }
 
-    public function test_migration_columns_for_string(): void
+    public function test_schema_columns_per_type(): void
     {
-        $result = FieldParser::toMigrationColumns([['name' => 'title', 'type' => 'string']]);
-        $this->assertStringContainsString('`title` VARCHAR(255)', $result);
+        $result = FieldParser::toSchemaColumns([
+            ['name' => 'title', 'type' => 'string'],
+            ['name' => 'published', 'type' => 'boolean'],
+            ['name' => 'body', 'type' => 'text'],
+            ['name' => 'price', 'type' => 'decimal'],
+            ['name' => 'contact', 'type' => 'email'],
+            ['name' => 'starts_at', 'type' => 'datetime'],
+            ['name' => 'category_id', 'type' => 'foreign'],
+        ]);
+
+        $this->assertStringContainsString("\$table->string('title');", $result);
+        $this->assertStringContainsString("\$table->boolean('published')->default(false);", $result);
+        $this->assertStringContainsString("\$table->text('body');", $result);
+        $this->assertStringContainsString("\$table->decimal('price', 10, 2)->default(0);", $result);
+        $this->assertStringContainsString("\$table->string('contact', 150)->unique();", $result);
+        $this->assertStringContainsString("\$table->dateTime('starts_at')->nullable();", $result);
+        $this->assertStringContainsString("\$table->foreignId('category_id')->constrained('categories');", $result);
     }
 
-    public function test_migration_columns_for_boolean(): void
+    public function test_nullable_fields(): void
     {
-        $result = FieldParser::toMigrationColumns([['name' => 'published', 'type' => 'boolean']]);
-        $this->assertStringContainsString('`published` TINYINT(1)', $result);
+        $fields = [['name' => 'bio', 'type' => 'text', 'nullable' => true], ['name' => 'age', 'type' => 'integer', 'nullable' => true]];
+
+        $this->assertStringContainsString("\$table->text('bio')->nullable();", FieldParser::toSchemaColumns($fields));
+        $this->assertStringContainsString("\$table->integer('age')->nullable();", FieldParser::toSchemaColumns($fields));
+
+        $rules = FieldParser::toValidationRules($fields, 'people');
+        $this->assertStringContainsString("'bio' => ['nullable', 'string']", $rules);
+        $this->assertStringContainsString("'age' => ['nullable', 'integer']", $rules);
+
+        $this->assertStringNotContainsString('required', FieldParser::toFormFields($fields));
     }
 
-    public function test_migration_columns_for_text(): void
+    public function test_schema_columns_empty(): void
     {
-        $result = FieldParser::toMigrationColumns([['name' => 'body', 'type' => 'text']]);
-        $this->assertStringContainsString('`body` TEXT', $result);
-    }
-
-    public function test_migration_columns_empty(): void
-    {
-        $this->assertSame('', FieldParser::toMigrationColumns([]));
+        $this->assertSame('', FieldParser::toSchemaColumns([]));
     }
 
     public function test_fillable_contains_all_fields(): void

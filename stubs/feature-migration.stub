@@ -1,23 +1,20 @@
 <?php
 
 use Luany\Database\Migration\Migration;
+use Luany\Database\Schema\Blueprint;
 
-class Create{{Models}}Table extends Migration
+return new class extends Migration
 {
     public function up(\PDO $pdo): void
     {
-        $pdo->exec("
-            CREATE TABLE IF NOT EXISTS `{{table}}` (
-                `id`         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-{{migration_columns}}
-                `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP{{migration_constraints}}
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-        ");
+        $this->schema($pdo)->create('{{table}}', function (Blueprint $table) {
+            $table->id();
+{{schema_columns}}            $table->timestamps();
+        });
     }
 
     public function down(\PDO $pdo): void
     {
-        $pdo->exec("DROP TABLE IF EXISTS `{{table}}`");
+        $this->schema($pdo)->dropIfExists('{{table}}');
     }
-}
+};

@@ -4,6 +4,7 @@ namespace LuanyCli\Commands;
 
 use LuanyCli\BaseCommand;
 use LuanyCli\Env;
+use LuanyCli\Support\Console;
 use LuanyCli\Support\FieldParser;
 use LuanyCli\Support\InvalidNameException;
 use LuanyCli\Support\MigrationFinder;
@@ -47,11 +48,14 @@ class MakeFeatureCommand extends BaseCommand
         if (!empty($inlineFields)) {
             $fields = $inlineFields;
         } else {
-            echo "  Tip: \033[36mluany make:feature {$model} name:string price:decimal\033[0m\n\n";
+            echo "  Tip: \033[36mluany make:feature {$model} title:string price:decimal bio:text?\033[0m\n\n";
             $fields = $this->collectFields();
 
             if (empty($fields)) {
                 echo "  \033[33m⚠\033[0m  No fields defined. Generating empty structure.\n\n";
+            } elseif (!$this->confirmSummary($model, $table, $fields)) {
+                echo "\n  \033[33m→\033[0m  Aborted — nothing was generated.\n\n";
+                return;
             }
         }
 
@@ -75,8 +79,7 @@ class MakeFeatureCommand extends BaseCommand
             'casts'             => FieldParser::toCasts($fields),
             'relations'         => FieldParser::toRelations($fields),
             'model_imports'     => FieldParser::toModelImports($fields),
-            'migration_columns' => FieldParser::toMigrationColumns($fields),
-            'migration_constraints' => FieldParser::toMigrationConstraints($fields, $table),
+            'schema_columns'    => FieldParser::toSchemaColumns($fields),
             'form_fields'       => FieldParser::toFormFields($fields),
             'show_fields'       => FieldParser::toShowFields($fields, $item),
             'index_headers'     => FieldParser::toIndexHeaders($fields),
@@ -284,57 +287,91 @@ class MakeFeatureCommand extends BaseCommand
      */
     protected function collectFields(): array
     {
-        $types = implode('/', FieldParser::TYPES);
+        $io = $this->console();
 
-        echo "  Add fields? [yes/no]: ";
-        $answer = trim(fgets(STDIN));
-
-        if ($answer !== 'yes' && $answer !== 'y') {
+        if (!$io->confirm('Add fields?', true)) {
             return [];
         }
 
+        $io->write("\n  \033[2mEnter a name (title) or name:type (price:decimal). End with ? for optional (bio:text?).\n"
+            . "  Leave empty to finish.\033[0m\n\n");
+
         $fields = [];
-        echo "\n";
 
         while (true) {
-            echo "  Field name (or 'done' to finish): ";
-            $fieldName = trim(fgets(STDIN));
+            $entry = $io->ask('Field');
 
-            if ($fieldName === 'done' || $fieldName === '') {
+            if ($entry === '' || strtolower($entry) === 'done') {
                 break;
             }
 
+            [$name, $type, $nullable] = self::parseFieldEntry($entry);
+
             try {
-                NameValidator::column($fieldName);
+                NameValidator::column($name);
             } catch (InvalidNameException $e) {
-                echo "  \033[31m✗\033[0m  {$e->getMessage()}\n\n";
+                $io->error($e->getMessage());
                 continue;
             }
 
-            while (true) {
-                echo "  Type [{$types}]: ";
-                $fieldType = trim((string) fgets(STDIN));
-
-                if ($fieldType === '') {
-                    $fieldType = 'string';
-                    echo "  \033[33m→\033[0m  No type given — defaulting to string.\n";
-                    break;
-                }
-
-                try {
-                    NameValidator::fieldType($fieldType, $fieldName);
-                    break;
-                } catch (InvalidNameException $e) {
-                    echo "  \033[31m✗\033[0m  {$e->getMessage()}\n";
-                }
+            if ($type === '') {
+                $type = $io->choice("Type of [{$name}]", FieldParser::TYPE_DESCRIPTIONS, str_ends_with($name, '_id') ? 'foreign' : 'string');
             }
 
-            $fields[] = ['name' => $fieldName, 'type' => $fieldType];
-            echo "\n";
+            $field = ['name' => $name, 'type' => $type, 'nullable' => $nullable];
+
+            try {
+                NameValidator::fields([...$fields, $field]);
+            } catch (InvalidNameException $e) {
+                $io->error($e->getMessage());
+                continue;
+            }
+
+            $fields[] = $field;
+            $io->info("{$name} \033[2m{$type}" . ($nullable ? ', optional' : '') . "\033[0m");
         }
 
-        echo "\n";
+        $io->write("\n");
         return $fields;
+    }
+
+    /**
+     * Interactive console (overridable in tests).
+     */
+    protected function console(): Console
+    {
+        return new Console();
+    }
+
+    /**
+     * "name", "name:type", "name:type?" or "name?" → [name, type, nullable].
+     *
+     * @return array{0: string, 1: string, 2: bool}
+     */
+    private static function parseFieldEntry(string $entry): array
+    {
+        $entry    = trim($entry);
+        $nullable = str_ends_with($entry, '?');
+        $entry    = rtrim($entry, '?');
+
+        [$name, $type] = str_contains($entry, ':') ? explode(':', $entry, 2) : [$entry, ''];
+
+        return [trim($name), strtolower(trim($type)), $nullable];
+    }
+
+    /**
+     * @param array<int, array{name: string, type: string, nullable?: bool}> $fields
+     */
+    private function confirmSummary(string $model, string $table, array $fields): bool
+    {
+        $io = $this->console();
+        $io->write("  \033[1m{$model}\033[0m  \033[2m(table {$table})\033[0m\n");
+        foreach ($fields as $field) {
+            $io->write(sprintf("    %-20s %-9s %s\n", $field['name'], $field['type'], !empty($field['nullable']) ? 'optional' : ''));
+        }
+        $io->write("\n");
+
+        return $io->confirm('Generate model, migration, controller, views and routes?', true);
     }
 
     private function resolveLayout(): string
@@ -357,13 +394,10 @@ class MakeFeatureCommand extends BaseCommand
             return "layouts.{$layouts[0]}";
         }
 
-        $default = $layouts[0];
-        echo "  Available layouts: \033[36m" . implode(', ', $layouts) . "\033[0m\n";
-        echo "  Extend layout [\033[36m{$default}\033[0m]: ";
-        $input  = trim(fgets(STDIN));
-        $choice = ($input && in_array($input, $layouts, true)) ? $input : $default;
+        $default = in_array('main', $layouts, true) ? 'main' : $layouts[0];
+        $options = array_combine($layouts, array_map(fn (string $l) => "views/layouts/{$l}.lte", $layouts));
 
-        return "layouts.{$choice}";
+        return 'layouts.' . $this->console()->choice('Layout', $options, $default);
     }
 
     private function pluralize(string $word): string
@@ -392,14 +426,12 @@ class MakeFeatureCommand extends BaseCommand
                     "Invalid field definition [{$arg}] — expected name:type (e.g. title:string)."
                 );
             }
-            [$name, $type] = explode(':', $arg, 2);
-            $name = trim($name);
-            $type = trim($type);
+            [$name, $type, $nullable] = self::parseFieldEntry($arg);
 
             NameValidator::column($name);
             NameValidator::fieldType($type, $name);
 
-            $fields[] = ['name' => $name, 'type' => $type];
+            $fields[] = ['name' => $name, 'type' => $type, 'nullable' => $nullable];
         }
         return NameValidator::fields($fields);
     }

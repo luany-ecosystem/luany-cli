@@ -10,6 +10,8 @@ use LuanyCli\Support\NameValidator;
 
 class MakeMigrationCommand extends BaseCommand
 {
+    private string $currentName = '';
+
     public function name(): string
     {
         return 'make:migration';
@@ -53,35 +55,67 @@ class MakeMigrationCommand extends BaseCommand
             );
         }
 
+        $this->currentName = $name;
         file_put_contents($path, $this->stub($class, $table));
         echo "\n  \033[32m✓\033[0m  Migration created: database/migrations/{$filename}\n\n";
     }
 
+    /**
+     * Anonymous-class migration using the portable schema builder:
+     *   create_posts_table          → Schema::create('posts', …)
+     *   add_x_to_posts_table        → Schema::table('posts', …)
+     *   remove_x_from_posts_table   → Schema::table('posts', …)
+     *   anything else               → empty up() / down()
+     */
     private function stub(string $class, string $table): string
+    {
+        $name = $this->currentName;
+
+        if (preg_match('/^create_(.+)_table$/', $name, $m) === 1) {
+            return $this->render(
+                "        \$this->schema(\$pdo)->create('{$m[1]}', function (Blueprint \$table) {\n"
+                . "            \$table->id();\n"
+                . "            \$table->timestamps();\n"
+                . "        });",
+                "        \$this->schema(\$pdo)->dropIfExists('{$m[1]}');"
+            );
+        }
+
+        if (preg_match('/_(?:to|from|in|on)_(.+)_table$/', $name, $m) === 1) {
+            return $this->render(
+                "        \$this->schema(\$pdo)->table('{$m[1]}', function (Blueprint \$table) {\n"
+                . "            //\n"
+                . "        });",
+                "        \$this->schema(\$pdo)->table('{$m[1]}', function (Blueprint \$table) {\n"
+                . "            //\n"
+                . "        });"
+            );
+        }
+
+        return $this->render('        //', '        //');
+    }
+
+    private function render(string $up, string $down): string
     {
         return <<<PHP
 <?php
 
 use Luany\Database\Migration\Migration;
+use Luany\Database\Schema\Blueprint;
 
-class {$class} extends Migration
+return new class extends Migration
 {
     public function up(\PDO \$pdo): void
     {
-        \$pdo->exec("
-            CREATE TABLE IF NOT EXISTS `{$table}` (
-                `id`         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-        ");
+{$up}
     }
 
     public function down(\PDO \$pdo): void
     {
-        \$pdo->exec("DROP TABLE IF EXISTS `{$table}`");
+{$down}
     }
-}
+};
+
 PHP;
     }
 
