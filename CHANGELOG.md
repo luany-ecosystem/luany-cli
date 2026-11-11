@@ -6,7 +6,7 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
-## [Unreleased] — 1.4.0
+## [1.4.0] — 2026-11-11
 
 ### Added
 - **`luany view:check`** — validates every `.lte` view without rendering (luany/lte ≥ 1.2): block structure, branch placement, required arguments and PHP syntax, reported as `file:line:column`. Boots the application so provider-registered directives are known (`--no-app` to skip), `--path=` for another directory, `--format=github` for GitHub Actions annotations; exits 1 on errors.
