@@ -6,7 +6,7 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
-## [Unreleased] — 1.5.0
+## [1.5.0] — 2026-11-11
 
 ### Added
 - **`luany new`** asks for the database (SQLite / MySQL / PostgreSQL) and git before composer runs; writes the `DB_*` settings to `.env`; with SQLite creates the database file and runs the migrations. Options `--database=`, `--git` / `--no-git`, `--no-migrate`, `-n`.
