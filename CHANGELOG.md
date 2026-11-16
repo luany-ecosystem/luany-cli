@@ -6,7 +6,7 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
-## [Unreleased]
+## [1.6.0] — 2026-11-16
 
 ### Added
 - `migrate:rollback --step=N` rolls back the last N migrations (newest first, across batches) instead of the last batch; `migrate:rollback --help`. Needs luany/database with `MigrationRunner::rollbackLast()`.
