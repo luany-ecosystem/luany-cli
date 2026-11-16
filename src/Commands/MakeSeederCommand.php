@@ -56,8 +56,12 @@ class {$class} extends Seeder
 {
     public function run(\\PDO \$pdo): void
     {
-        // \$stmt = \$pdo->prepare("INSERT IGNORE INTO `table` (`column`) VALUES (?)");
-        // \$stmt->execute(['value']);
+        // Portable across SQLite, MySQL and PostgreSQL. With a model:
+        //   \App\Models\User::create(['name' => 'Ada', 'email' => 'ada@example.com']);
+        //
+        // Or with plain SQL:
+        //   \$pdo->prepare('INSERT INTO users (name, email) VALUES (?, ?)')
+        //       ->execute(['Ada', 'ada@example.com']);
     }
 }
 PHP;

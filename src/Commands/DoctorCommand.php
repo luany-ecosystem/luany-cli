@@ -33,7 +33,7 @@ class DoctorCommand extends BaseCommand
 
         $this->check('PHP version', PHP_VERSION, version_compare(PHP_VERSION, '8.2.0', '>='));
         $this->checkExtension('pdo');
-        $this->checkExtension('pdo_mysql');
+        $this->checkDriverExtension();
         $this->checkExtension('mbstring');
         $this->checkExtension('openssl');
         $this->checkExtension('json');
@@ -97,6 +97,24 @@ class DoctorCommand extends BaseCommand
         printf("  %s  %-30s %s\n", $icon, "ext/{$ext}", $value);
     }
 
+    /**
+     * PDO extension of the project's DB_CONNECTION (SQLite by default, like
+     * the skeleton) — not always pdo_mysql.
+     */
+    private function checkDriverExtension(): void
+    {
+        try {
+            $driver = \LuanyCli\Commands\MigrateBaseCommand::driver(\LuanyCli\Support\EnvRepository::load(Env::basePath()));
+        } catch (\LuanyCli\Support\EnvException) {
+            $driver = \LuanyCli\Commands\MigrateBaseCommand::DEFAULT_DRIVER; // reported in the project checks
+        }
+
+        $extension = \LuanyCli\Support\DriverCheck::extension($driver);
+        if ($extension !== null) {
+            $this->checkExtension($extension);
+        }
+    }
+
     private function checkFile(string $label, string $path): void
     {
         $exists = file_exists($path);
@@ -152,7 +170,7 @@ class DoctorCommand extends BaseCommand
             ? ' (from environment)'
             : '';
 
-        $driver  = strtolower((string) $env->get('DB_CONNECTION', 'mysql'));
+        $driver  = \LuanyCli\Commands\MigrateBaseCommand::driver($env);
         $problem = \LuanyCli\Support\DriverCheck::problem($driver);
         if ($problem !== null) {
             printf("  \033[31m✗\033[0m  %-30s %s\n", 'database driver', $problem);

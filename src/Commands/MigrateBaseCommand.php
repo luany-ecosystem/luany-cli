@@ -31,10 +31,16 @@ abstract class MigrateBaseCommand extends BaseCommand
         }
     }
 
+    /**
+     * Default DB_CONNECTION, as in the skeleton's .env.example and
+     * DatabaseServiceProvider.
+     */
+    public const DEFAULT_DRIVER = 'sqlite';
+
     protected function pdo(): \PDO
     {
         $env    = $this->env();
-        $driver = strtolower((string) $env->get('DB_CONNECTION', 'mysql'));
+        $driver = self::driver($env);
 
         $problem = \LuanyCli\Support\DriverCheck::problem($driver);
         if ($problem !== null) {
@@ -42,16 +48,50 @@ abstract class MigrateBaseCommand extends BaseCommand
             exit(1);
         }
 
-        return self::connect($env, Env::basePath());
+        $pdo = self::connect($env, Env::basePath());
+
+        // Seeders and migrations may use the project's models.
+        self::bindModelConnection($pdo);
+
+        return $pdo;
     }
 
     /**
-     * PDO for DB_CONNECTION = sqlite | mysql | pgsql (default mysql, as in
-     * projects created before SQLite became the skeleton default).
+     * The project's DB_CONNECTION (lowercase), defaulting to SQLite like the
+     * application.
+     */
+    public static function driver(EnvRepository $env): string
+    {
+        return strtolower((string) $env->get('DB_CONNECTION', self::DEFAULT_DRIVER));
+    }
+
+    /**
+     * Give the project's models (luany/database) the CLI's connection, as the
+     * application's DatabaseServiceProvider does — the app is not booted here.
+     *
+     * @return bool Whether luany/database's Model was found and bound
+     */
+    public static function bindModelConnection(\PDO $pdo): bool
+    {
+        // Resolved at runtime: luany/database belongs to the project.
+        $model      = 'Luany\\Database\\Model';
+        $connection = 'Luany\\Database\\Connection';
+
+        if (!class_exists($model) || !class_exists($connection)) {
+            return false;
+        }
+
+        $model::setConnection($connection::fromPdo($pdo));
+        return true;
+    }
+
+    /**
+     * PDO for DB_CONNECTION = sqlite | mysql | pgsql (default sqlite, like
+     * the skeleton; SQLite path relative to the project, foreign keys on).
      */
     public static function connect(\LuanyCli\Support\EnvRepository $env, string $basePath): \PDO
     {
-        $driver  = strtolower((string) $env->get('DB_CONNECTION', 'mysql'));
+        $driver  = self::driver($env);
         $options = [
             \PDO::ATTR_ERRMODE            => \PDO::ERRMODE_EXCEPTION,
             \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
@@ -66,7 +106,10 @@ abstract class MigrateBaseCommand extends BaseCommand
                 if ($path !== ':memory:' && !is_dir(dirname($path))) {
                     mkdir(dirname($path), 0755, true);
                 }
-                return new \PDO('sqlite:' . $path, null, null, $options);
+                $pdo = new \PDO('sqlite:' . $path, null, null, $options);
+                // Off by default per SQLite connection; on in the app (luany/database).
+                $pdo->exec('PRAGMA foreign_keys = ON');
+                return $pdo;
 
             case 'pgsql':
                 $dsn = sprintf(

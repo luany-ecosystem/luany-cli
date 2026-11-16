@@ -4,6 +4,8 @@ namespace LuanyCli\Commands;
 
 use LuanyCli\BaseCommand;
 use LuanyCli\Env;
+use LuanyCli\Support\EnvException;
+use LuanyCli\Support\EnvRepository;
 
 class AboutCommand extends BaseCommand
 {
@@ -52,44 +54,26 @@ class AboutCommand extends BaseCommand
         echo "\n";
     }
 
-    /** @return array<string, string> */
+    /**
+     * APP_* values resolved like the framework's env(): real environment
+     * variables first, then .env.
+     *
+     * @return array<string, string>
+     */
     private function readEnv(): array
     {
-        $file = Env::basePath() . '/.env';
-        if (!file_exists($file)) {
-            return [];
+        try {
+            $env = EnvRepository::load(Env::basePath());
+        } catch (EnvException) {
+            $env = null; // unreadable .env: real environment variables only
         }
 
         $result = [];
-        $lines  = file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-
-        foreach ($lines as $line) {
-            $line = trim($line);
-
-            // Skip comments
-            if (str_starts_with($line, '#')) {
-                continue;
+        foreach (['APP_NAME', 'APP_ENV', 'APP_DEBUG', 'APP_URL'] as $key) {
+            $value = $env !== null ? $env->get($key) : (getenv($key) ?: null);
+            if ($value !== null) {
+                $result[$key] = $value;
             }
-
-            $pos = strpos($line, '=');
-            if ($pos === false) {
-                continue;
-            }
-
-            $key   = trim(substr($line, 0, $pos));
-            $value = trim(substr($line, $pos + 1));
-
-            // Strip surrounding quotes
-            if (strlen($value) >= 2) {
-                if (
-                    (str_starts_with($value, '"') && str_ends_with($value, '"')) ||
-                    (str_starts_with($value, "'") && str_ends_with($value, "'"))
-                ) {
-                    $value = substr($value, 1, -1);
-                }
-            }
-
-            $result[$key] = $value;
         }
 
         return $result;

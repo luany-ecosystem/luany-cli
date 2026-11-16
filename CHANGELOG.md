@@ -6,6 +6,26 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [Unreleased]
+
+### Added
+- `migrate:rollback --step=N` rolls back the last N migrations (newest first, across batches) instead of the last batch; `migrate:rollback --help`. Needs luany/database with `MigrationRunner::rollbackLast()`.
+
+### Changed
+- `DB_CONNECTION` defaults to `sqlite` (with `DB_NAME` defaulting to `database/database.sqlite`) in `migrate*`, `db:seed` and `doctor`, like the skeleton — projects on MySQL / PostgreSQL must set `DB_CONNECTION` in `.env` (as the app already requires). SQLite connections enable `PRAGMA foreign_keys = ON`, like the app.
+
+### Fixed
+- `make:controller Admin/Post` imports `App\Controllers\Controller` in nested namespaces (was "class not found").
+- `db:seed`, `migrate*`: models used in seeders / migrations work — the CLI calls `Model::setConnection()` with its connection when luany/database's `Model` is available.
+- `doctor` checks the PDO extension of the configured `DB_CONNECTION` (`pdo_sqlite` by default) instead of always `pdo_mysql`.
+- `about` resolves `APP_*` like the framework's `env()`: real environment variables win over `.env`.
+- `dev` no longer warns when `APP_ENV=local` (the live-reload middleware accepts `development` and `local`); `APP_ENV` from the real environment is honoured.
+- `make:seeder` stub is driver-neutral (model or plain `INSERT` example) instead of MySQL-only `INSERT IGNORE`.
+- `make:feature BlogPost` uses table `blog_posts` (model, migration, validation rules) and slug `blog-posts` (routes, URLs, views directory) instead of `blogposts`.
+- `view:check --path=X` checks files under `X` even when the app boots (files are parsed by path with the app's compiler, keeping custom directives) — they were reported "not found" because the app's engine resolved names against its own `views/`.
+
+---
+
 ## [1.5.1] — 2026-11-11
 
 ### Fixed

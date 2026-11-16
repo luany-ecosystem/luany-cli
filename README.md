@@ -77,7 +77,7 @@ luany <command> [arguments]
 | `make:test <Name>`                           | Scaffold a PHPUnit test class                                             |
 | `make:feature <Name>`                        | Scaffold a complete feature (model, controller, migration, views, routes) |
 | `migrate`                                    | Run all pending migrations                                                |
-| `migrate:rollback`                           | Rollback the last migration batch                                         |
+| `migrate:rollback [--step=N]`                | Rollback the last migration batch (or the last N migrations)              |
 | `migrate:status`                             | Show the status of all migrations                                         |
 | `migrate:fresh`                              | Drop all tables and re-run all migrations                                 |
 | `route:list`                                 | Display all registered routes in a table                                  |
@@ -115,14 +115,14 @@ Options: `--database=sqlite|mysql|pgsql`, `--git` / `--no-git`, `--no-migrate`, 
 luany doctor
 ```
 
-Outside a project — checks the global environment:
+Outside a project — checks the global environment (the PDO extension follows `DB_CONNECTION`, SQLite by default):
 
 ```
 Luany Environment Check
 ──────────────────────────────────────────────────
 ✓  PHP version                   8.4.6
 ✓  ext/pdo                       loaded
-✓  ext/pdo_mysql                 loaded
+✓  ext/pdo_sqlite                loaded
 ✓  ext/mbstring                  loaded
 ✓  ext/openssl                   loaded
 ✓  ext/json                      loaded
@@ -163,7 +163,7 @@ Starts the **Luany Dev Engine (LDE)** — the integrated development server with
 - PHP 8.2+
 - Node.js installed and available in PATH
 - `npm install` run in project root
-- `APP_ENV=development` in `.env`
+- `APP_ENV=development` (or `local`) in `.env`
 
 **What it does:**
 - Starts PHP built-in server (default: 8000)
@@ -478,7 +478,7 @@ Tests: 185, Assertions: 246, Skipped: 1.
 
 ### Live reload not working
 
-- `APP_ENV=development` in `.env`
+- `APP_ENV=development` (or `local`) in `.env`
 - Node.js installed (`node -v`)
 - Run `npm install`
 - WebSocket port (default `35729`) not in use

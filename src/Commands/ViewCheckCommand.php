@@ -14,7 +14,8 @@ use LuanyCli\Env;
  * @php and directive arguments (luany/lte >= 1.2).
  *
  * The application is booted when possible so directives registered by its
- * service providers are known; otherwise a plain engine is used.
+ * service providers are known; otherwise a plain engine is used. Files are
+ * checked by path, so --path works whatever the app's own views directory.
  *
  * Options:
  *   --path=views        views directory, relative to the project root
@@ -68,10 +69,8 @@ class ViewCheckCommand extends BaseCommand
         }
 
         foreach ($files as $relative) {
-            $name = str_replace('/', '.', substr($relative, 0, -4));
-
             try {
-                $engine->parseView($name);
+                $this->parseFile($engine, $views . '/' . $relative);
             } catch (\Luany\Lte\TemplateSyntaxException $e) {
                 $errors++;
                 $this->report($options, $options['path'] . '/' . $relative, $e);
@@ -141,6 +140,28 @@ class ViewCheckCommand extends BaseCommand
         }
 
         return (string) preg_replace('/ \(line \d+(, column \d+)?\)\.$/', '.', $inner->getMessage());
+    }
+
+    /**
+     * Parse and validate one file with the engine's compiler — the same work
+     * as Engine::parseView(), but by path: the app's engine resolves names
+     * against its own views/ directory, which may not be --path.
+     */
+    private function parseFile(object $engine, string $file): void
+    {
+        if (!$engine instanceof \Luany\Lte\Engine) {
+            throw new \LogicException('Unexpected view engine ' . get_class($engine) . '.');
+        }
+
+        $source = file_get_contents($file);
+        if ($source === false) {
+            throw new \RuntimeException('Cannot read the file.');
+        }
+
+        $compiler = $engine->getCompiler();
+        $parser   = new \Luany\Lte\Parser(static fn (string $name): bool => $compiler->isDirective($name));
+
+        $compiler->buildTree($parser->parse($source));
     }
 
     /**
