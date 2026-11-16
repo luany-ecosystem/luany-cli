@@ -21,6 +21,14 @@ final class DriverCheck
     ];
 
     /**
+     * PDO extension for a DB_CONNECTION driver (null for unknown drivers).
+     */
+    public static function extension(string $driver): ?string
+    {
+        return self::EXTENSIONS[$driver] ?? null;
+    }
+
+    /**
      * @param (callable(string): bool)|null $loaded Extension probe (tests)
      */
     public static function isAvailable(string $driver, ?callable $loaded = null): bool

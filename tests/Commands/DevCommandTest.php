@@ -107,4 +107,28 @@ class DevCommandTest extends TestCase
         $this->expectExceptionMessageMatches('/WebSocket port/');
         (new DevCommand())->handle(['localhost', '8000', '70000']);
     }
+    /** @return string Output of the APP_ENV check */
+    private function appEnvWarning(): string
+    {
+        $command = new class extends DevCommand {
+            public function check(string $root): void { $this->assertAppEnv($root); }
+        };
+
+        ob_start();
+        $command->check($this->baseDir);
+        return (string) ob_get_clean();
+    }
+
+    public function test_app_env_local_is_accepted_like_the_live_reload_middleware(): void
+    {
+        file_put_contents($this->baseDir . '/.env', "APP_ENV=local\n");
+        $this->assertSame('', $this->appEnvWarning());
+
+        file_put_contents($this->baseDir . '/.env', "APP_ENV=development\n");
+        $this->assertSame('', $this->appEnvWarning());
+
+        file_put_contents($this->baseDir . '/.env', "APP_ENV=production\n");
+        $this->assertStringContainsString('APP_ENV', $this->appEnvWarning());
+    }
+
 }

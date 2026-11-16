@@ -51,12 +51,15 @@ class MakeControllerCommand extends BaseCommand
 
     private function stub(string $name, string $namespace): string
     {
+        // Nested controllers (App\Controllers\Admin) must import the base class.
+        $baseImport = $namespace === 'App\\Controllers' ? '' : "use App\\Controllers\\Controller;\n";
+
         return <<<PHP
 <?php
 
 namespace {$namespace};
 
-use Luany\Core\Http\Request;
+{$baseImport}use Luany\Core\Http\Request;
 use Luany\Core\Http\Response;
 
 class {$name} extends Controller

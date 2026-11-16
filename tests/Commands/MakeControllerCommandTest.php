@@ -113,4 +113,26 @@ class MakeControllerCommandTest extends TestCase
 
         $this->assertFileExists($this->baseDir . '/app/Controllers/BlogPostController.php');
     }
+    public function test_nested_controller_imports_the_base_controller(): void
+    {
+        ob_start();
+        (new MakeControllerCommand())->handle(['Admin/Post']);
+        ob_end_clean();
+
+        $content = file_get_contents($this->baseDir . '/app/Controllers/Admin/PostController.php');
+        $this->assertStringContainsString('namespace App\\Controllers\\Admin;', $content);
+        $this->assertStringContainsString('use App\\Controllers\\Controller;', $content);
+        $this->assertStringContainsString('class PostController extends Controller', $content);
+    }
+
+    public function test_top_level_controller_does_not_import_itself(): void
+    {
+        ob_start();
+        (new MakeControllerCommand())->handle(['Post']);
+        ob_end_clean();
+
+        $content = file_get_contents($this->baseDir . '/app/Controllers/PostController.php');
+        $this->assertStringNotContainsString('use App\\Controllers\\Controller;', $content);
+    }
+
 }

@@ -664,4 +664,36 @@ class MakeFeatureCommandTest extends TestCase
         $this->assertStringContainsString("'bio' => ['nullable', 'string']", $controller);
         $this->assertStringContainsString("'age' => ['nullable', 'integer']", $controller);
     }
+    public function test_multi_word_feature_uses_snake_table_and_kebab_slug(): void
+    {
+        $this->generate(['BlogPost', 'title:string']);
+
+        $model = file_get_contents($this->baseDir . '/app/Models/BlogPost.php');
+        $this->assertStringContainsString("protected string \$table = 'blog_posts';", $model);
+
+        $migrations = glob($this->baseDir . '/database/migrations/*_create_blog_posts_table.php');
+        $this->assertCount(1, $migrations);
+        $this->assertStringContainsString("create('blog_posts'", file_get_contents($migrations[0]));
+
+        $routes = file_get_contents($this->baseDir . '/routes/blog-posts.php');
+        $this->assertStringContainsString("Route::resource('blog-posts', BlogPostController::class);", $routes);
+
+        $controller = file_get_contents($this->baseDir . '/app/Controllers/BlogPostController.php');
+        $this->assertStringContainsString("view('pages.blog-posts.index'", $controller);
+        $this->assertStringContainsString("redirect('/blog-posts')", $controller);
+
+        foreach (['index', 'show', 'create', 'edit'] as $view) {
+            $this->assertFileExists($this->baseDir . "/views/pages/blog-posts/{$view}.lte");
+        }
+        $this->assertStringContainsString('action="/blog-posts"', file_get_contents($this->baseDir . '/views/pages/blog-posts/create.lte'));
+    }
+
+    public function test_single_word_feature_names_are_unchanged(): void
+    {
+        $this->generate(['Category', 'name:string']);
+
+        $this->assertFileExists($this->baseDir . '/routes/categories.php');
+        $this->assertStringContainsString("'categories'", file_get_contents($this->baseDir . '/app/Models/Category.php'));
+    }
+
 }

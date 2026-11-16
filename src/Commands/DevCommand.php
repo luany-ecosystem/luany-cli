@@ -61,28 +61,30 @@ class DevCommand extends BaseCommand
     // ── Private helpers ────────────────────────────────────────────────────────
 
     /**
-     * Warn (not abort) if APP_ENV is not set to "development".
+     * Warn (not abort) unless APP_ENV is "development" or "local" — the
+     * environments in which the framework's LiveReloadMiddleware injects the
+     * client. Resolved like the app: real environment first, then .env.
      * The developer may have forgotten, but we should not block them.
      */
-    private function assertAppEnv(string $projectRoot): void
+    protected function assertAppEnv(string $projectRoot): void
     {
-        $envFile = $projectRoot . '/.env';
-
-        if (!file_exists($envFile)) {
+        try {
+            $env = \LuanyCli\Support\EnvRepository::load($projectRoot);
+        } catch (\LuanyCli\Support\EnvException) {
             return;
         }
 
-        $contents = file_get_contents($envFile);
+        $appEnv = $env->get('APP_ENV');
 
-        if ($contents === false) {
+        // No .env and no APP_ENV: nothing to say yet (e.g. before key:generate).
+        if ($appEnv === null && !$env->hasFile()) {
             return;
         }
 
-        // Check if APP_ENV is set to development
-        if (!preg_match('/^APP_ENV\s*=\s*development\s*$/im', $contents)) {
-            echo "\n  \033[33m⚠\033[0m  APP_ENV is not set to 'development' in your .env\n";
-            echo "     DevMiddleware requires APP_ENV=development to inject the live reload client.\n";
-            echo "     Run: \033[36mecho 'APP_ENV=development' >> .env\033[0m  (or edit .env manually)\n\n";
+        if (!in_array(strtolower(trim((string) $appEnv)), ['development', 'local'], true)) {
+            echo "\n  \033[33m⚠\033[0m  APP_ENV is not 'development' or 'local'" . ($appEnv !== null ? " (it is '{$appEnv}')" : '') . "\n";
+            echo "     Live reload is only injected when APP_ENV=development or APP_ENV=local.\n";
+            echo "     Set \033[36mAPP_ENV=development\033[0m in your .env.\n\n";
         }
     }
 

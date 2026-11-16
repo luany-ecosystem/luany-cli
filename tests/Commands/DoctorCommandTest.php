@@ -86,5 +86,28 @@ class DoctorCommandTest extends TestCase
         }
         rmdir($dir);
     }
+    public function test_checks_the_pdo_extension_of_the_configured_driver(): void
+    {
+        file_put_contents($this->baseDir . '/composer.json', json_encode(['require' => ['luany/framework' => '^1.0']]));
+        file_put_contents($this->baseDir . '/.env', "APP_KEY=x\nDB_CONNECTION=pgsql\nDB_HOST=127.0.0.1\nDB_PORT=1\n");
+
+        ob_start();
+        (new DoctorCommand())->handle([]);
+        $output = (string) ob_get_clean();
+
+        $this->assertStringContainsString('ext/pdo_pgsql', $output);
+        $this->assertStringNotContainsString('ext/pdo_mysql', $output);
+    }
+
+    public function test_checks_pdo_sqlite_by_default(): void
+    {
+        ob_start();
+        (new DoctorCommand())->handle([]);
+        $output = (string) ob_get_clean();
+
+        $this->assertStringContainsString('ext/pdo_sqlite', $output);
+        $this->assertStringNotContainsString('ext/pdo_mysql', $output);
+    }
+
 }
 

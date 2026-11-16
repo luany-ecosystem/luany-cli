@@ -92,4 +92,16 @@ class MakeSeederCommandTest extends TestCase
         $this->expectException(\LuanyCli\Support\InvalidNameException::class);
         (new MakeSeederCommand())->handle(['Foo Bar']);
     }
+    public function test_stub_is_driver_neutral(): void
+    {
+        ob_start();
+        (new MakeSeederCommand())->handle(['User']);
+        ob_end_clean();
+
+        $content = file_get_contents($this->baseDir . '/database/seeders/UserSeeder.php');
+        $this->assertStringNotContainsString('INSERT IGNORE', $content);
+        $this->assertStringNotContainsString('`', $content);
+        $this->assertStringContainsString('::create(', $content);
+    }
+
 }

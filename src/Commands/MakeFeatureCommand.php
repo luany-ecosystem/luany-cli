@@ -35,10 +35,11 @@ class MakeFeatureCommand extends BaseCommand
 
         $model  = NameValidator::className($name, 'feature name');
         $models = $this->pluralize($model);
-        $slug   = strtolower($models);
+        $words  = (string) preg_replace('/(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])/', '_', $models);
+        $table  = strtolower($words);                    // BlogPosts → blog_posts
+        $slug   = str_replace('_', '-', $table);         // BlogPosts → blog-posts (URL, views, routes file)
         $item   = strtolower($model);
         $items  = strtolower($models);
-        $table  = $slug;
 
         // Validate inline fields before any interaction or file write.
         $inlineFields = $this->parseInlineFields(array_slice($args, 1));

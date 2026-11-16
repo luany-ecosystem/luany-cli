@@ -134,4 +134,32 @@ class ViewCheckCommandTest extends TestCase
         $this->assertSame(1, $r['exit']);
         $this->assertStringContainsString('Views directory not found: nope', $r['output']);
     }
+    public function test_custom_path_is_checked_when_the_app_boots(): void
+    {
+        // A bootable app whose view engine points at views/, not at --path.
+        mkdir($this->base . '/bootstrap');
+        mkdir($this->base . '/resources/views/emails', 0777, true);
+        file_put_contents($this->base . '/resources/views/emails/ok.lte', "@if(\$x) yes @endif");
+        file_put_contents($this->base . '/resources/views/emails/broken.lte', '@if($x) x');
+        file_put_contents($this->base . '/bootstrap/app.php', <<<'PHP'
+<?php
+return new class {
+    public function make(string $id): object
+    {
+        if ($id === 'view') {
+            return new \Luany\Lte\Engine(__DIR__ . '/../views', sys_get_temp_dir() . '/luany_vc_app_' . md5(__DIR__));
+        }
+        return new class { public function boot(): void {} };
+    }
+};
+PHP);
+
+        $r = $this->check(['--path=resources/views']);
+
+        $this->assertSame(1, $r['exit']);
+        $this->assertStringNotContainsString('not found', $r['output']);
+        $this->assertStringContainsString('resources/views/emails/broken.lte:1:1', $r['output']);
+        $this->assertStringNotContainsString('emails/ok.lte', $r['output']);
+    }
+
 }

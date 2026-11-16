@@ -57,5 +57,23 @@ class AboutCommandTest extends TestCase
         }
         rmdir($dir);
     }
+    public function test_real_environment_variables_win_over_env_file(): void
+    {
+        file_put_contents($this->baseDir . '/.env', "APP_NAME=FromFile\nAPP_ENV=local\n");
+        $previous = getenv('APP_NAME');
+        putenv('APP_NAME=FromEnvironment');
+
+        try {
+            ob_start();
+            (new AboutCommand())->handle([]);
+            $output = (string) ob_get_clean();
+        } finally {
+            putenv($previous === false ? 'APP_NAME' : "APP_NAME={$previous}");
+        }
+
+        $this->assertStringContainsString('FromEnvironment', $output);
+        $this->assertStringNotContainsString('FromFile', $output);
+    }
+
 }
 
