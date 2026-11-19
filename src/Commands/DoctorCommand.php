@@ -55,7 +55,10 @@ class DoctorCommand extends BaseCommand
         $this->checkFile('.env',            $base . '/.env');
         $this->checkDir('vendor',           $base . '/vendor');
         $this->checkDir('vendor/luany/framework', $base . '/vendor/luany/framework');
-        $this->checkDir('database/migrations', $base . '/database/migrations');
+        $usesDatabase = self::usesDatabase($base);
+        if ($usesDatabase) {
+            $this->checkDir('database/migrations', $base . '/database/migrations');
+        }
         // APP_KEY (real environment first, then .env — like the app)
         try {
             $appKey = (string) \LuanyCli\Support\EnvRepository::load($base)->get('APP_KEY', '');
@@ -64,8 +67,9 @@ class DoctorCommand extends BaseCommand
             $appKey = '';
         }
         $keyOk = !empty($appKey);
-        $icon  = $keyOk ? "\033[32m✓\033[0m" : "\033[31m✗\033[0m";
-        $value = $keyOk ? 'configured' : 'missing — run: luany key:generate';
+        // Recommended, not required: nothing in the framework reads APP_KEY yet.
+        $icon  = $keyOk ? "\033[32m✓\033[0m" : "\033[33m⚠\033[0m";
+        $value = $keyOk ? 'configured' : 'not set — recommended: luany key:generate';
         printf("  %s  %-30s %s\n", $icon, 'APP_KEY', $value);
 
         $this->checkFile('bootstrap/app.php',  $base . '/bootstrap/app.php');
@@ -76,12 +80,22 @@ class DoctorCommand extends BaseCommand
         $this->checkWritable('storage/cache/views', $base . '/storage/cache/views');
         $this->checkWritable('storage/logs',        $base . '/storage/logs');        
 
-        $this->checkDatabase($base);
+        if ($usesDatabase) {
+            $this->checkDatabase($base);
+        } else {
+            printf("  \033[90m–\033[0m  %-30s %s\n", 'database', 'not used (luany/database not installed)');
+        }
 
         echo "\n";
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    /** luany/database is optional: projects without it get no database checks. */
+    public static function usesDatabase(string $base): bool
+    {
+        return is_dir($base . '/vendor/luany/database');
+    }
 
     private function check(string $label, string $value, bool $ok): void
     {
