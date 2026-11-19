@@ -81,6 +81,8 @@ luany <command> [arguments]
 | `migrate:status`                             | Show the status of all migrations                                         |
 | `migrate:fresh`                              | Drop all tables and re-run all migrations                                 |
 | `route:list`                                 | Display all registered routes in a table                                  |
+| `route:cache`                                | Cache the route table for production (`storage/cache/routes.php`)        |
+| `route:clear`                                | Delete the route cache                                                    |
 | `key:generate`                               | Generate and set APP_KEY in .env                                          |
 | `cache:clear`                                | Clear compiled view cache                                                 |
 | `view:check [--path=views] [--format=github]` | Validate all LTE views (structure + PHP syntax) without rendering          |
