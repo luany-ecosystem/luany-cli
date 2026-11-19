@@ -149,6 +149,11 @@ class DoctorCommand extends BaseCommand
                 $version = preg_replace('/\+.+$/', '', $v);
             }
         }
+        $latest = \LuanyCli\Support\UpdateChecker::newerThan((string) $version);
+        if ($latest !== null) {
+            printf("  \033[33m!\033[0m  %-30s %s → %s available (luany self-update)\n", 'luany/cli', $version, $latest);
+            return;
+        }
         printf("  \033[32m✓\033[0m  %-30s %s\n", 'luany/cli', $version);
     }
 

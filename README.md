@@ -83,6 +83,7 @@ luany <command> [arguments]
 | `route:list`                                 | Display all registered routes in a table                                  |
 | `route:cache`                                | Cache the route table for production (`storage/cache/routes.php`)        |
 | `route:clear`                                | Delete the route cache                                                    |
+| `self-update`                                | Update the global CLI to the latest version                               |
 | `key:generate`                               | Generate and set APP_KEY in .env                                          |
 | `cache:clear`                                | Clear compiled view cache                                                 |
 | `view:check [--path=views] [--format=github]` | Validate all LTE views (structure + PHP syntax) without rendering          |

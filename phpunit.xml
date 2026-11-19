@@ -8,4 +8,7 @@
             <directory>tests</directory>
         </testsuite>
     </testsuites>
+    <php>
+        <env name="LUANY_NO_UPDATE_CHECK" value="1"/>
+    </php>
 </phpunit>

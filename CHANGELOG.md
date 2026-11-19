@@ -6,6 +6,12 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [Unreleased]
+
+### Added
+- **Update notice** — `luany` and `luany doctor` say when a newer luany/cli is on Packagist. Checked at most once a day (cached in `~/.luany/update-check.json`) with a 2-second timeout; a network failure never affects the command. Off in CI or with `LUANY_NO_UPDATE_CHECK=1`.
+- **`luany self-update`** — updates the global CLI with `composer global update luany/cli`; when the CLI is installed in a project's `vendor/`, prints `composer update luany/cli` instead.
+
 ## [1.7.0] — 2026-11-19
 
 ### Added
