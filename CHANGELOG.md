@@ -6,7 +6,7 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
-## [Unreleased]
+## [1.8.0] — 2026-11-19
 
 ### Added
 - **Update notice** — `luany` and `luany doctor` say when a newer luany/cli is on Packagist. Checked at most once a day (cached in `~/.luany/update-check.json`) with a 2-second timeout; a network failure never affects the command. Off in CI or with `LUANY_NO_UPDATE_CHECK=1`.
