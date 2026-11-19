@@ -23,6 +23,8 @@ use LuanyCli\Commands\MigrateFreshCommand;
 use LuanyCli\Commands\MigrateRollbackCommand;
 use LuanyCli\Commands\MigrateStatusCommand;
 use LuanyCli\Commands\NewCommand;
+use LuanyCli\Commands\RouteCacheCommand;
+use LuanyCli\Commands\RouteClearCommand;
 use LuanyCli\Commands\RouteListCommand;
 use LuanyCli\Commands\DbSeedCommand;
 use LuanyCli\Commands\MakeSeederCommand;
@@ -107,6 +109,8 @@ class Application
         $registry->register(new MigrateFreshCommand());
         $registry->register(new DbSeedCommand());
         $registry->register(new RouteListCommand());
+        $registry->register(new RouteCacheCommand());
+        $registry->register(new RouteClearCommand());
         $registry->register(new KeyGenerateCommand());
         $registry->register(new CacheClearCommand());
         $registry->register(new ViewCheckCommand());
