@@ -203,6 +203,7 @@ class ProcessManager
             "{$host}:{$port}",
             '-t',
             $publicDir,
+            \LuanyCli\Commands\ServeCommand::routerPath(),
         ];
 
         $descriptors = [

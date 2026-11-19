@@ -43,6 +43,16 @@ class ServeCommand extends BaseCommand
             escapeshellarg("{$host}:{$port}"),
             '-t',
             escapeshellarg($docRoot),
+            escapeshellarg(self::routerPath()),
         ]);
+    }
+
+    /**
+     * Router script that sends every non-file URI to public/index.php
+     * (the built-in server would otherwise 404 URIs such as /sitemap.xml).
+     */
+    public static function routerPath(): string
+    {
+        return dirname(__DIR__, 2) . '/resources/server.php';
     }
 }
