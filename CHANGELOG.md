@@ -6,7 +6,7 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
-## [Unreleased]
+## [1.7.0] — 2026-11-19
 
 ### Added
 - **`luany route:cache`** — boots the application like a request (providers, every file in `routes/`) and writes the route table to the Kernel's cache path (`storage/cache/routes.php`), which luany/framework ≥ 1.4 loads instead of the route files. A stale cache is rebuilt from the route files; closure routes fail with the list of offending routes. Run it on every deploy.
