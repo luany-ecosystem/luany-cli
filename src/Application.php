@@ -26,6 +26,7 @@ use LuanyCli\Commands\NewCommand;
 use LuanyCli\Commands\RouteCacheCommand;
 use LuanyCli\Commands\RouteClearCommand;
 use LuanyCli\Commands\RouteListCommand;
+use LuanyCli\Commands\SelfUpdateCommand;
 use LuanyCli\Commands\DbSeedCommand;
 use LuanyCli\Commands\MakeSeederCommand;
 use LuanyCli\Commands\ServeCommand;
@@ -118,6 +119,7 @@ class Application
         $registry->register(new ListCommand($registry));
         $registry->register(new NewCommand());
         $registry->register(new DoctorCommand());
+        $registry->register(new SelfUpdateCommand());
         $registry->register(new MakeFeatureCommand());
     }
 }
