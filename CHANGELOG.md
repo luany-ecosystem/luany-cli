@@ -6,7 +6,7 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
-## [Unreleased]
+## [1.6.1] — 2026-11-19
 
 ### Fixed
 - `luany serve` and `luany dev` start PHP's built-in server with a router (`resources/server.php`). Without it the built-in server answered 404 itself for any URI with an extension that is not a file, so routes such as `/sitemap.xml` or `/api/users.json` never reached the application. Static files in `public/` are still served directly, and nothing outside `public/` is.
