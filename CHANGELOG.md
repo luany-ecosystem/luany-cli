@@ -6,6 +6,12 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [Unreleased]
+
+### Fixed
+- `doctor` reported `database/migrations missing` and a missing `_migrations` table in projects that don't use a database. luany/database is optional: without it the database checks are skipped (`database — not used`).
+- `doctor` showed a missing `APP_KEY` as an error; nothing in the framework reads it yet, so it is now a recommendation (⚠).
+
 ## [1.8.0] — 2026-11-19
 
 ### Added

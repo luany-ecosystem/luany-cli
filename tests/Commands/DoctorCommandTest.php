@@ -109,5 +109,33 @@ class DoctorCommandTest extends TestCase
         $this->assertStringNotContainsString('ext/pdo_mysql', $output);
     }
 
-}
 
+    public function test_projects_without_luany_database_get_no_database_checks(): void
+    {
+        file_put_contents($this->baseDir . '/composer.json', json_encode(['require' => ['luany/framework' => '^1.0']]));
+        file_put_contents($this->baseDir . '/.env', "APP_ENV=production\n");
+
+        ob_start();
+        (new DoctorCommand())->handle([]);
+        $output = (string) ob_get_clean();
+
+        $this->assertStringContainsString('not used (luany/database not installed)', $output);
+        $this->assertStringNotContainsString('database/migrations', $output);
+        $this->assertStringNotContainsString('_migrations table', $output);
+        $this->assertStringContainsString('not set — recommended: luany key:generate', $output, 'APP_KEY is a warning');
+    }
+
+    public function test_projects_with_luany_database_are_checked(): void
+    {
+        file_put_contents($this->baseDir . '/composer.json', json_encode(['require' => ['luany/framework' => '^1.0']]));
+        file_put_contents($this->baseDir . '/.env', "APP_KEY=x\nDB_CONNECTION=sqlite\nDB_NAME=:memory:\n");
+        mkdir($this->baseDir . '/vendor/luany/database', 0755, true);
+
+        ob_start();
+        (new DoctorCommand())->handle([]);
+        $output = (string) ob_get_clean();
+
+        $this->assertStringContainsString('database/migrations', $output);
+        $this->assertStringNotContainsString('not used', $output);
+    }
+}
