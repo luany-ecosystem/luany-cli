@@ -85,6 +85,10 @@ luany <command> [arguments]
 | `route:clear`                                | Delete the route cache                                                    |
 | `self-update`                                | Update the global CLI to the latest version                               |
 | `key:generate`                               | Generate and set APP_KEY in .env                                          |
+| `env:encrypt`                                | Encrypt `.env` into `.env.{env}.encrypted` (safe to commit)               |
+| `env:decrypt`                                | Decrypt an encrypted environment file back to plain text                  |
+| `env:edit`                                   | Edit an encrypted environment file in your editor                         |
+| `env:set`                                    | Set values in an encrypted environment file (`KEY=VALUE …`)               |
 | `cache:clear`                                | Clear compiled view cache                                                 |
 | `view:check [--path=views] [--format=github]` | Validate all LTE views (structure + PHP syntax) without rendering          |
 

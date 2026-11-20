@@ -6,6 +6,16 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [Unreleased]
+
+### Added
+- **Encrypted environment files** (needs luany/framework 1.6, whose `EnvironmentCipher` does the cryptography — the CLI never implements it):
+  - `luany env:encrypt [--env=production] [--key=…] [--force]` — `.env.{env}` (or `.env`) → `.env.{env}.encrypted`; generates and prints a key once when none is given.
+  - `luany env:decrypt [--env=…] [--key=…] [--force]` — writes the plain file back (never overwrites without `--force`).
+  - `luany env:edit [--env=…]` — opens the decrypted content in `$VISUAL` / `$EDITOR` from a private temporary file, encrypts it again and removes the temporary file.
+  - `luany env:set KEY=VALUE … [--env=…]` — changes values without ever writing the plain file; values are quoted so phpdotenv reads them back literally.
+  - The key comes from `--key`, else `LUANY_ENV_KEY_{ENV}`, else `LUANY_ENV_KEY`.
+
 ## [1.8.1] — 2026-11-19
 
 ### Fixed
