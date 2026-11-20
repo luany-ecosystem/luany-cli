@@ -6,7 +6,7 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
-## [Unreleased]
+## [1.9.0] — 2026-11-20
 
 ### Added
 - **Encrypted environment files** (needs luany/framework 1.6, whose `EnvironmentCipher` does the cryptography — the CLI never implements it):
