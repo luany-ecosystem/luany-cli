@@ -6,7 +6,7 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
-## [Unreleased]
+## [1.11.0] — 2026-11-22
 
 ### Added
 - **`--json` and `--dry-run`** (Phase S1, first part) for the generators: `make:controller`, `make:model`, `make:middleware`, `make:provider`, `make:request`, `make:seeder`, `make:test`, `make:view`, `make:migration`. `--dry-run` shows the plan with a unified diff and writes nothing; `--json` prints the `luany.cli/1` envelope (`schema`, `ok`, `command`, `cli_version`, `dry_run`, `data`, `plan`, `messages`, `error`). Other commands refuse the flags (`LUANY-CLI-002`/`003`) rather than running for real.
