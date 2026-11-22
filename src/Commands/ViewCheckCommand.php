@@ -159,7 +159,11 @@ class ViewCheckCommand extends BaseCommand
         }
 
         $compiler = $engine->getCompiler();
-        $parser   = new \Luany\Lte\Parser(static fn (string $name): bool => $compiler->isDirective($name));
+        // LTE >= 1.4: the engine's own parser carries the project's syntax
+        // (Portuguese directive aliases); older engines build a plain one.
+        $parser = method_exists($engine, 'getParser')
+            ? $engine->getParser()
+            : new \Luany\Lte\Parser(static fn (string $name): bool => $compiler->isDirective($name));
 
         $compiler->buildTree($parser->parse($source));
     }
@@ -198,7 +202,28 @@ class ViewCheckCommand extends BaseCommand
             }
         }
 
-        return new \Luany\Lte\Engine($views, sys_get_temp_dir() . '/luany_view_check_' . md5($views));
+        $engine = new \Luany\Lte\Engine($views, sys_get_temp_dir() . '/luany_view_check_' . md5($views));
+        $syntax = self::syntax($base);
+        if ($syntax !== 'en' && method_exists($engine, 'setSyntax')) {
+            $engine->setSyntax($syntax);
+        }
+
+        return $engine;
+    }
+
+    /**
+     * Template syntax without booting the app: LUANY_SYNTAX from the real
+     * environment, then from the project's .env. Defaults to "en".
+     */
+    private static function syntax(string $base): string
+    {
+        $value = getenv('LUANY_SYNTAX');
+        if (!is_string($value) || $value === '') {
+            $env   = @file_get_contents($base . '/.env');
+            $value = is_string($env) && preg_match('/^\s*LUANY_SYNTAX\s*=\s*["\']?([a-z]+)/mi', $env, $m) === 1 ? $m[1] : 'en';
+        }
+
+        return strtolower(trim($value));
     }
 
     /**
