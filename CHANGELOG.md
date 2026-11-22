@@ -6,7 +6,7 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
-## [Unreleased]
+## [1.10.1] — 2026-11-22
 
 ### Fixed
 - CI: PHPStan flagged the LTE 1.4 compatibility checks in `view:check` as always true once luany/lte 1.4 was installed; they now use `is_callable()` (still needed for projects on older LTE).
