@@ -3,10 +3,12 @@
 namespace LuanyCli\Commands;
 
 use LuanyCli\BaseCommand;
-use LuanyCli\Env;
+use LuanyCli\Output\CommandError;
+use LuanyCli\Output\Output;
+use LuanyCli\Output\StructuredCommand;
 use LuanyCli\Support\NameValidator;
 
-class MakeViewCommand extends BaseCommand
+class MakeViewCommand extends BaseCommand implements StructuredCommand
 {
     public function name(): string
     {
@@ -25,35 +27,17 @@ class MakeViewCommand extends BaseCommand
         $type = $args[1] ?? 'page'; // page | component | layout
 
         if (!$name) {
-            fwrite(STDERR, "\n  \033[31m✗\033[0m  Usage: luany make:view <name> [page|component|layout]\n");
-            fwrite(STDERR, "  Examples:\n");
-            fwrite(STDERR, "    luany make:view pages.about\n");
-            fwrite(STDERR, "    luany make:view components.card component\n");
-            fwrite(STDERR, "    luany make:view layouts.admin layout\n\n");
-            exit(1);
+            throw CommandError::usage('make:view <name> [page|component|layout]', 'make:view components.card component');
         }
 
         $relativePath = implode('/', NameValidator::viewName($name)) . '.lte';
-        $fullPath     = Env::basePath() . '/views/' . $relativePath;
-        $dir          = dirname($fullPath);
-
-        if (!is_dir($dir)) {
-            mkdir($dir, 0755, true);
-        }
-
-        if (file_exists($fullPath)) {
-            echo "\n  \033[33m⚠\033[0m  View [{$name}] already exists.\n\n";
-            exit(0);
-        }
-
         $stub = match($type) {
             'component' => $this->componentStub(),
             'layout'    => $this->layoutStub(),
             default     => $this->pageStub(),
         };
 
-        file_put_contents($fullPath, $stub);
-        echo "\n  \033[32m✓\033[0m  View created: views/{$relativePath} [{$type}]\n\n";
+        Output::current()->createFile('views/' . $relativePath, $stub, 'view', "[{$name}]");
     }
 
 private function pageStub(): string

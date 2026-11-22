@@ -3,12 +3,15 @@
 namespace LuanyCli\Commands;
 
 use LuanyCli\BaseCommand;
+use LuanyCli\Output\CommandError;
+use LuanyCli\Output\Output;
+use LuanyCli\Output\StructuredCommand;
 use LuanyCli\Env;
 use LuanyCli\Support\InvalidNameException;
 use LuanyCli\Support\MigrationFinder;
 use LuanyCli\Support\NameValidator;
 
-class MakeMigrationCommand extends BaseCommand
+class MakeMigrationCommand extends BaseCommand implements StructuredCommand
 {
     private string $currentName = '';
 
@@ -28,9 +31,7 @@ class MakeMigrationCommand extends BaseCommand
         $name = $args[0] ?? null;
 
         if (!$name) {
-            fwrite(STDERR, "\n  \033[31m✗\033[0m  Usage: luany make:migration <migration_name>\n");
-            fwrite(STDERR, "  Example: luany make:migration create_users_table\n\n");
-            exit(1);
+            throw CommandError::usage('make:migration <migration_name>', 'make:migration create_users_table');
         }
 
         $name = NameValidator::migrationName($name);
@@ -38,13 +39,8 @@ class MakeMigrationCommand extends BaseCommand
         $timestamp = date('Y_m_d_His');
         $filename  = "{$timestamp}_{$name}.php";
         $dir       = Env::basePath() . '/database/migrations';
-        $path      = "{$dir}/{$filename}";
         $class     = $this->toClassName($name);
         $table     = $this->tableFromName($name);
-
-        if (!is_dir($dir)) {
-            mkdir($dir, 0755, true);
-        }
 
         // Two migrations with the same name declare the same class and make
         // the migration runner fatal with "cannot redeclare class".
@@ -56,8 +52,7 @@ class MakeMigrationCommand extends BaseCommand
         }
 
         $this->currentName = $name;
-        file_put_contents($path, $this->stub($class, $table));
-        echo "\n  \033[32m✓\033[0m  Migration created: database/migrations/{$filename}\n\n";
+        Output::current()->createFile("database/migrations/{$filename}", $this->stub($class, $table), 'migration', $filename);
     }
 
     /**

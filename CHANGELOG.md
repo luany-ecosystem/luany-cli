@@ -6,6 +6,15 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [Unreleased]
+
+### Added
+- **`--json` and `--dry-run`** (Phase S1, first part) for the generators: `make:controller`, `make:model`, `make:middleware`, `make:provider`, `make:request`, `make:seeder`, `make:test`, `make:view`, `make:migration`. `--dry-run` shows the plan with a unified diff and writes nothing; `--json` prints the `luany.cli/1` envelope (`schema`, `ok`, `command`, `cli_version`, `dry_run`, `data`, `plan`, `messages`, `error`). Other commands refuse the flags (`LUANY-CLI-002`/`003`) rather than running for real.
+- **Message codes and Portuguese messages** (L3a, first part): CLI errors and generator messages carry stable codes (`LUANY-CLI-001`…, `LUANY-MAKE-002`…) and follow `LUANY_DEV_LANGUAGE` (`en` default, `pt`), read from the environment or `.env`. Catalogs in `src/Resources/messages/{en,pt}.php`.
+
+### Changed
+- Usage errors print a usage line plus an example hint; an existing file is a warning (exit 0), except for seeders (error, as before).
+
 ## [1.10.1] — 2026-11-22
 
 ### Fixed

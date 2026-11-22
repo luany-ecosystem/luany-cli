@@ -3,9 +3,11 @@
 namespace LuanyCli\Commands;
 
 use LuanyCli\BaseCommand;
-use LuanyCli\Env;
+use LuanyCli\Output\CommandError;
+use LuanyCli\Output\Output;
+use LuanyCli\Output\StructuredCommand;
 
-class MakeRequestCommand extends BaseCommand
+class MakeRequestCommand extends BaseCommand implements StructuredCommand
 {
     public function name(): string
     {
@@ -23,31 +25,16 @@ class MakeRequestCommand extends BaseCommand
         $name = $args[0] ?? null;
 
         if (!$name) {
-            fwrite(STDERR, "\n  \033[31m✗\033[0m  Usage: luany make:request <RequestName>\n");
-            fwrite(STDERR, "  Example: luany make:request StoreUserRequest\n\n");
-            exit(1);
+            throw CommandError::usage('make:request <RequestName>', 'make:request StoreUserRequest');
         }
 
         // Normalise — append 'Request' suffix if missing
         ['subPath' => $subPath, 'className' => $className] = $this->normalizeClassPath($name, 'Request');
 
         $namespace = 'App\\Http\\Requests' . ($subPath ? '\\' . str_replace('/', '\\', $subPath) : '');
-        $dir       = Env::basePath() . '/app/Http/Requests' . ($subPath ? '/' . $subPath : '');
-        $path      = "{$dir}/{$className}.php";
+        $relative  = 'app/Http/Requests/' . ($subPath ? $subPath . '/' : '') . "{$className}.php";
 
-        if (!is_dir($dir)) {
-            mkdir($dir, 0755, true);
-        }
-
-        if (file_exists($path)) {
-            echo "\n  \033[33m⚠\033[0m  {$className} already exists.\n\n";
-            return;
-        }
-
-        file_put_contents($path, $this->stub($className, $namespace));
-
-        $relative = 'app/Http/Requests/' . ($subPath ? $subPath . '/' : '') . "{$className}.php";
-        echo "\n  \033[32m✓\033[0m  Request created: {$relative}\n\n";
+        Output::current()->createFile($relative, $this->stub($className, $namespace), 'request', $className);
     }
 
     private function stub(string $name, string $namespace): string

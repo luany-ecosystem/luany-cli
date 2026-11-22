@@ -431,6 +431,39 @@ Generated models set `$timestamps = true` (the model writes `created_at` /
 `updated_at`). Views format dates and show booleans as Yes/No. Requires
 luany/database ≥ 1.3 and luany/framework ≥ 1.2.
 
+## --json, --dry-run and message codes
+
+Generators (`make:controller`, `make:model`, `make:middleware`, `make:provider`, `make:request`, `make:seeder`, `make:test`, `make:view`, `make:migration`) accept two global flags:
+
+```bash
+luany make:model Post --dry-run          # show the plan and the diff, write nothing
+luany make:model Post --json             # machine-readable result
+luany make:model Post --dry-run --json   # both
+```
+
+`--json` prints one envelope (format `luany.cli/1`):
+
+```json
+{
+  "schema": "luany.cli/1",
+  "ok": true,
+  "command": "make:model",
+  "cli_version": "1.11.0",
+  "dry_run": true,
+  "data": {},
+  "plan": [{ "op": "create", "path": "app/Models/Post.php", "applied": false, "diff": "--- /dev/null\n+++ b/app/Models/Post.php\n..." }],
+  "messages": [{ "code": "LUANY-MAKE-004", "level": "info", "text": "Would create app/Models/Post.php (dry run, nothing written)" }]
+}
+```
+
+On failure `ok` is `false`, the exit code is non-zero and `error` holds `code`, `message` and `hint`. `schema` is the format version: new fields keep it, removing or changing one moves it to `luany.cli/2`.
+
+Commands that do not support the flags yet refuse them (`LUANY-CLI-002` / `LUANY-CLI-003`) instead of running for real.
+
+**Message codes** (`LUANY-<AREA>-<NNN>`) never change between versions or languages. Messages are in English, or in Portuguese with `LUANY_DEV_LANGUAGE=pt` in the environment or the project's `.env`.
+
+---
+
 ## Requirements
 
 - PHP 8.2+
