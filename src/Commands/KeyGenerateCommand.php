@@ -3,9 +3,12 @@
 namespace LuanyCli\Commands;
 
 use LuanyCli\BaseCommand;
+use LuanyCli\Output\CommandError;
+use LuanyCli\Output\Output;
+use LuanyCli\Output\StructuredCommand;
 use LuanyCli\Env;
 
-class KeyGenerateCommand extends BaseCommand
+class KeyGenerateCommand extends BaseCommand implements StructuredCommand
 {
     public function name(): string
     {
@@ -20,20 +23,32 @@ class KeyGenerateCommand extends BaseCommand
     /** @param array<int, string> $args */
     public function handle(array $args): void
     {
+        $out     = Output::current();
         $envFile = Env::basePath() . '/.env';
+        $content = null;
 
         if (!file_exists($envFile)) {
             $example = Env::basePath() . '/.env.example';
             if (!file_exists($example)) {
-                fwrite(STDERR, "\n  \033[31m✗\033[0m  .env.example not found.\n\n");
-                exit(1);
+                throw new CommandError('LUANY-KEY-001');
             }
-            copy($example, $envFile);
-            echo "\n  \033[32m✓\033[0m  .env created from .env.example\n";
+            $out->planned('create', '.env');
+            $content = (string) file_get_contents($example);
+            if (!$out->dryRun) {
+                copy($example, $envFile);
+                $out->compact();
+                $out->say('LUANY-KEY-002');
+            }
+        }
+
+        // The key is a secret: the plan never carries a diff for it.
+        $out->planned('update', '.env');
+        if ($out->dryRun) {
+            return;
         }
 
         $key     = 'base64:' . base64_encode(random_bytes(32));
-        $content = file_get_contents($envFile);
+        $content ??= (string) file_get_contents($envFile);
 
         if (str_contains($content, 'APP_KEY=')) {
             $content = preg_replace('/^APP_KEY=.*/m', "APP_KEY={$key}", $content);
@@ -42,7 +57,9 @@ class KeyGenerateCommand extends BaseCommand
         }
 
         file_put_contents($envFile, $content);
-        echo "  \033[32m✓\033[0m  Application key set.\n\n";
+        $out->compact();
+        $out->say('LUANY-KEY-003');
+        $out->line();
     }
 }
 

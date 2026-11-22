@@ -6,6 +6,15 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [Unreleased]
+
+### Added
+- **`--json` / `--dry-run`, part 2:** `make:feature` (plan of all 8 files, `data.routes`; never prompts under `--json`), `key:generate` (the plan never carries the key), `cache:clear`, `route:clear`, `route:list` (`data.routes`), `migrate:status` (`data.migrations`), `view:check` (`data.diagnostics` with file, line, column) and `about` (`data.app`, `data.versions`).
+- Their messages carry codes (`LUANY-ROUTE-*`, `LUANY-VIEW-*`, `LUANY-KEY-*`, `LUANY-CACHE-*`, `LUANY-MIGRATE-*`) and are translated (`LUANY_DEV_LANGUAGE=pt`).
+
+### Changed
+- `view:check` reports its summary ("N of M view(s) have errors") as the command error, on STDERR; with `--format=github` STDOUT carries only the annotations, as before.
+
 ## [1.11.0] — 2026-11-22
 
 ### Added

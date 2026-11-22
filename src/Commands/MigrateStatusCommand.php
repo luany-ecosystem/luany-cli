@@ -3,8 +3,10 @@
 namespace LuanyCli\Commands;
 
 use Luany\Database\Migration\MigrationRunner;
+use LuanyCli\Output\Output;
+use LuanyCli\Output\StructuredCommand;
 
-class MigrateStatusCommand extends MigrateBaseCommand
+class MigrateStatusCommand extends MigrateBaseCommand implements StructuredCommand
 {
     public function name(): string
     {
@@ -22,8 +24,18 @@ class MigrateStatusCommand extends MigrateBaseCommand
         $runner = new MigrationRunner($this->pdo(), $this->migrationPath());
         $status = $runner->status();
 
+        $out = Output::current();
+        $out->data(['migrations' => array_map(fn (array $m): array => [
+            'name'  => $m['name'],
+            'ran'   => (bool) $m['ran'],
+            'batch' => $m['batch'] ?? null,
+        ], array_values($status))]);
+
         if (empty($status)) {
-            echo "\n  \033[33m→\033[0m  No migrations found.\n\n";
+            $out->say('LUANY-MIGRATE-001', [], 'info');
+            return;
+        }
+        if ($out->json) {
             return;
         }
 

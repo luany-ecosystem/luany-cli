@@ -3,6 +3,9 @@
 namespace LuanyCli\Commands;
 
 use LuanyCli\BaseCommand;
+use LuanyCli\Output\CommandError;
+use LuanyCli\Output\Output;
+use LuanyCli\Output\StructuredCommand;
 use LuanyCli\Env;
 use LuanyCli\Support\Console;
 use LuanyCli\Support\FieldParser;
@@ -11,7 +14,7 @@ use LuanyCli\Support\MigrationFinder;
 use LuanyCli\Support\NameValidator;
 use LuanyCli\Support\StubRenderer;
 
-class MakeFeatureCommand extends BaseCommand
+class MakeFeatureCommand extends BaseCommand implements StructuredCommand
 {
     public function name(): string
     {
@@ -29,9 +32,10 @@ class MakeFeatureCommand extends BaseCommand
         $name = $args[0] ?? null;
 
         if (!$name) {
-            fwrite(STDERR, "\n  \033[31m✗\033[0m  Usage: luany make:feature <FeatureName>\n\n");
-            exit(1);
+            throw CommandError::usage('make:feature <FeatureName> [field:type …]', 'make:feature Post title:string body:text?');
         }
+
+        $out = Output::current();
 
         $model  = NameValidator::className($name, 'feature name');
         $models = $this->pluralize($model);
@@ -46,7 +50,8 @@ class MakeFeatureCommand extends BaseCommand
 
         $layout = $this->resolveLayout();
 
-        if (!empty($inlineFields)) {
+        if (!empty($inlineFields) || $out->json) {
+            // --json never prompts: fields come from the command line only.
             $fields = $inlineFields;
         } else {
             echo "  Tip: \033[36mluany make:feature {$model} title:string price:decimal bio:text?\033[0m\n\n";
@@ -91,7 +96,9 @@ class MakeFeatureCommand extends BaseCommand
             'validation_rules_update' => FieldParser::toValidationRules($fields, $table, true),
         ];
 
-        echo "\n  \033[33m→\033[0m  Creating feature [\033[36m{$model}\033[0m]...\n\n";
+        $out->line();
+        $out->say('LUANY-MAKE-006', ['name' => $model], 'info');
+        $out->compact();
 
         $this->generateModel($renderer, $base, $stubs, $variables);
         $this->generateController($renderer, $base, $stubs, $variables);
@@ -101,7 +108,9 @@ class MakeFeatureCommand extends BaseCommand
         $this->printRoutes($variables);
         $this->warnMissingReferences($base, $fields);
 
-        echo "\n";
+        $out->compact(false);
+        $out->line();
+        $out->data(['model' => $model, 'table' => $table, 'fields' => $fields]);
     }
 
     /**
@@ -120,7 +129,7 @@ class MakeFeatureCommand extends BaseCommand
         }
 
         foreach (FieldParser::missingReferences($fields, $existing) as $table) {
-            echo "  \033[33m⚠ \033[0m  No migration creates [{$table}] yet — create it before running migrate (foreign key).\n";
+            Output::current()->say('LUANY-MAKE-007', ['table' => $table], 'warning');
         }
     }
 
@@ -129,154 +138,67 @@ class MakeFeatureCommand extends BaseCommand
     /** @param array<string, string> $v */
     private function generateModel(StubRenderer $r, string $base, string $stubs, array $v): void
     {
-        $path = "{$base}/app/Models/{$v['Model']}.php";
-
+        $out     = Output::current();
         $gitkeep = "{$base}/app/Models/.gitkeep";
-        if (file_exists($gitkeep)) {
+        if (!$out->dryRun && file_exists($gitkeep)) {
             unlink($gitkeep);
         }
-        
-        if (file_exists($path)) {
-            echo "  \033[33m⚠ \033[0m  Model already exists — skipped.\n";
-            return;
-        }
 
-        if (!is_dir("{$base}/app/Models")) {
-            mkdir("{$base}/app/Models", 0755, true);
-        }
-
-        $content = $r->render("{$stubs}/feature-model.stub", $v);
-        $content = preg_replace('/^\xEF\xBB\xBF/', '', $content);
-
-        $result = file_put_contents($path, $content);
-
-        if ($result === false) {
-            echo "  \033[31m✗\033[0m  Failed to create model.\n";
-            return;
-        }
-
-        echo "  \033[32m✓\033[0m  Model created:      app/Models/{$v['Model']}.php\n";
+        $out->createFile("app/Models/{$v['Model']}.php", self::render($r, "{$stubs}/feature-model.stub", $v), 'model', $v['Model']);
     }
 
     /** @param array<string, string> $v */
     private function generateController(StubRenderer $r, string $base, string $stubs, array $v): void
     {
-        $dir = "{$base}/app/Controllers";
-
-        if (!is_dir($dir)) {
-            mkdir($dir, 0755, true);
-        }
-
-        $path = "{$dir}/{$v['Model']}Controller.php";
-
-        if (file_exists($path)) {
-            echo "  \033[33m⚠ \033[0m  Controller already exists — skipped.\n";
-            return;
-        }
-
-        $content = $r->render("{$stubs}/feature-controller.stub", $v);
-        $content = preg_replace('/^\xEF\xBB\xBF/', '', $content);
-
-        $result = file_put_contents($path, $content);
-
-        if ($result === false) {
-            echo "  \033[31m✗\033[0m  Failed to create controller.\n";
-            return;
-        }
-
-        echo "  \033[32m✓\033[0m  Controller created: app/Controllers/{$v['Model']}Controller.php\n";
+        Output::current()->createFile(
+            "app/Controllers/{$v['Model']}Controller.php",
+            self::render($r, "{$stubs}/feature-controller.stub", $v),
+            'controller',
+            "{$v['Model']}Controller"
+        );
     }
 
     /** @param array<string, string> $v */
     private function generateMigration(StubRenderer $r, string $base, string $stubs, array $v): void
     {
-        $dir  = "{$base}/database/migrations";
         $name = "create_{$v['table']}_table";
-        $ts   = date('Y_m_d_His');
-        $file = "{$ts}_{$name}.php";
-
-        if (!is_dir($dir)) {
-            mkdir($dir, 0755, true);
-        }
 
         // A second Create{X}Table migration would redeclare the same class.
-        $existing = MigrationFinder::find($dir, $name);
+        $existing = MigrationFinder::find("{$base}/database/migrations", $name);
         if ($existing !== null) {
-            echo "  \033[33m⚠ \033[0m  Migration already exists — skipped: database/migrations/{$existing}\n";
+            Output::current()->say('LUANY-MAKE-008', ['path' => "database/migrations/{$existing}"], 'warning');
             return;
         }
 
-        $content = $r->render("{$stubs}/feature-migration.stub", $v);
-        $content = preg_replace('/^\xEF\xBB\xBF/', '', $content);
-
-        $result = file_put_contents("{$dir}/{$file}", $content);
-
-        if ($result === false) {
-            echo "  \033[31m✗\033[0m  Failed to create migration.\n";
-            return;
-        }
-
-        echo "  \033[32m✓\033[0m  Migration created:  database/migrations/{$file}\n";
+        $file = date('Y_m_d_His') . "_{$name}.php";
+        Output::current()->createFile("database/migrations/{$file}", self::render($r, "{$stubs}/feature-migration.stub", $v), 'migration', $file);
     }
 
     /** @param array<string, string> $v */
     private function generateViews(StubRenderer $r, string $base, string $stubs, array $v): void
     {
-        $dir = "{$base}/views/pages/{$v['slug']}";
-
-        if (!is_dir($dir)) {
-            mkdir($dir, 0755, true);
-        }
-
         foreach (['index' => 'feature-view-index.stub', 'show' => 'feature-view-show.stub', 'create' => 'feature-view-create.stub', 'edit' => 'feature-view-edit.stub'] as $view => $stub) {
-            $path = "{$dir}/{$view}.lte";
-
-            if (file_exists($path)) {
-                echo "  \033[33m⚠ \033[0m  View [{$view}] already exists — skipped.\n";
-                continue;
-            }
-
-            $content = $r->render("{$stubs}/{$stub}", $v);
-            $content = preg_replace('/^\xEF\xBB\xBF/', '', $content);
-
-            $result = file_put_contents($path, $content);
-
-            if ($result === false) {
-                echo "  \033[31m✗\033[0m  Failed to create view: {$view}.\n";
-                continue;
-            }
-
-            echo "  \033[32m✓\033[0m  View created:       views/pages/{$v['slug']}/{$view}.lte\n";
+            Output::current()->createFile("views/pages/{$v['slug']}/{$view}.lte", self::render($r, "{$stubs}/{$stub}", $v), 'view', "[{$view}]");
         }
     }
 
     /** @param array<string, string> $v */
     private function appendRoutes(string $base, array $v): void
     {
-        $routesDir  = "{$base}/routes";
-        $routesFile = "{$routesDir}/{$v['slug']}.php";
-
-        if (!is_dir($routesDir)) {
-            mkdir($routesDir, 0755, true);
-        }
-
-        // If a dedicated routes file for this feature already exists, skip
-        if (file_exists($routesFile)) {
-            echo "  \033[33m⚠ \033[0m  Routes file already exists — skipped.\n";
-            return;
-        }
-
-        $useStatement = "use App\\Controllers\\{$v['Model']}Controller;";
         $block  = "<?php\n\n";
         $block .= "use Luany\\Core\\Routing\\Route;\n";
-        $block .= "{$useStatement}\n\n";
+        $block .= "use App\\Controllers\\{$v['Model']}Controller;\n\n";
         $block .= "// ── {$v['Models']} " . str_repeat('─', 67) . "\n";
         $block .= "Route::resource('{$v['slug']}', {$v['Model']}Controller::class);\n";
 
-        file_put_contents($routesFile, $block);
-        echo "  \033[32m✓\033[0m  Routes created:     routes/{$v['slug']}.php\n";
+        Output::current()->createFile("routes/{$v['slug']}.php", $block, 'routes', "routes/{$v['slug']}.php");
     }
 
+    /** @param array<string, string> $v */
+    private static function render(StubRenderer $r, string $stub, array $v): string
+    {
+        return (string) preg_replace('/^\xEF\xBB\xBF/', '', $r->render($stub, $v));
+    }
 
     // ── Interactive ───────────────────────────────────────────────────────────
 
@@ -391,11 +313,14 @@ class MakeFeatureCommand extends BaseCommand
         }
 
         if (count($layouts) === 1) {
-            echo "  \033[33m→\033[0m  Using layout: \033[36mlayouts.{$layouts[0]}\033[0m\n";
+            Output::current()->line("  \033[33m→\033[0m  Using layout: \033[36mlayouts.{$layouts[0]}\033[0m");
             return "layouts.{$layouts[0]}";
         }
 
         $default = in_array('main', $layouts, true) ? 'main' : $layouts[0];
+        if (Output::current()->json) {
+            return "layouts.{$default}"; // --json never prompts
+        }
         $options = array_combine($layouts, array_map(fn (string $l) => "views/layouts/{$l}.lte", $layouts));
 
         return 'layouts.' . $this->console()->choice('Layout', $options, $default);
@@ -440,13 +365,21 @@ class MakeFeatureCommand extends BaseCommand
     /** @param array<string, string> $v */
     private function printRoutes(array $v): void
     {
-        echo "  \033[33mRoutes available:\033[0m\n";
-        echo "    \033[36mGET\033[0m     /{$v['slug']}                → index\n";
-        echo "    \033[36mGET\033[0m     /{$v['slug']}/create         → create\n";
-        echo "    \033[36mPOST\033[0m    /{$v['slug']}                → store\n";
-        echo "    \033[36mGET\033[0m     /{$v['slug']}/{id}           → show\n";
-        echo "    \033[36mGET\033[0m     /{$v['slug']}/{id}/edit      → edit\n";
-        echo "    \033[36mPUT\033[0m     /{$v['slug']}/{id}           → update\n";
-        echo "    \033[36mDELETE\033[0m  /{$v['slug']}/{id}           → destroy\n";
+        $routes = [
+            ['GET', "/{$v['slug']}", 'index'],
+            ['GET', "/{$v['slug']}/create", 'create'],
+            ['POST', "/{$v['slug']}", 'store'],
+            ['GET', "/{$v['slug']}/{id}", 'show'],
+            ['GET', "/{$v['slug']}/{id}/edit", 'edit'],
+            ['PUT', "/{$v['slug']}/{id}", 'update'],
+            ['DELETE', "/{$v['slug']}/{id}", 'destroy'],
+        ];
+
+        $out = Output::current();
+        $out->data(['routes' => array_map(fn (array $r): array => ['method' => $r[0], 'uri' => $r[1], 'action' => $r[2]], $routes)]);
+        $out->line("  \033[33m" . $out->text->text('LUANY-MAKE-009') . "\033[0m");
+        foreach ($routes as [$method, $uri, $action]) {
+            $out->line(sprintf("    \033[36m%-7s\033[0m %-28s → %s", $method, $uri, $action));
+        }
     }
 }

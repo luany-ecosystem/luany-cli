@@ -3,6 +3,9 @@
 namespace LuanyCli\Commands;
 
 use LuanyCli\BaseCommand;
+use LuanyCli\Output\CommandError;
+use LuanyCli\Output\Output;
+use LuanyCli\Output\StructuredCommand;
 use LuanyCli\Env;
 
 /**
@@ -14,7 +17,7 @@ use LuanyCli\Env;
  *
  * Uses Luany\Core\Routing\Route::getRoutes() to retrieve the route list.
  */
-class RouteListCommand extends BaseCommand
+class RouteListCommand extends BaseCommand implements StructuredCommand
 {
     public function name(): string
     {
@@ -30,26 +33,26 @@ class RouteListCommand extends BaseCommand
     public function handle(array $args): void
     {
         $base = Env::basePath();
+        $out  = Output::current();
 
         // Load project autoload so Route class is available
         $autoload = $base . '/vendor/autoload.php';
         if (!file_exists($autoload)) {
-            echo "\n  \033[31m✗\033[0m  vendor/autoload.php not found. Run: composer install\n\n";
-            return;
+            throw new CommandError('LUANY-ROUTE-001', [], 'composer install');
         }
         require_once $autoload;
 
         // Load routes file
         $routesDir = $base . '/routes';
         if (!is_dir($routesDir)) {
-            echo "\n  \033[33m→\033[0m  No routes directory found.\n\n";
+            $out->data(['routes' => []]);
+            $out->say('LUANY-ROUTE-003', [], 'info');
             return;
         }
 
         // Guard: Route class must exist
         if (!class_exists(\Luany\Core\Routing\Route::class)) {
-            echo "\n  \033[31m✗\033[0m  Luany\\Core\\Routing\\Route not found in vendor.\n\n";
-            return;
+            throw new CommandError('LUANY-ROUTE-002');
         }
 
         // Reset route state before loading
@@ -71,8 +74,19 @@ class RouteListCommand extends BaseCommand
 
         $routes = \Luany\Core\Routing\Route::getRoutes();
 
+        $out->data(['routes' => array_map(fn (array $r): array => [
+            'methods' => explode('|', $this->formatMethods($r)),
+            'uri'     => (string) ($r['uri'] ?? ''),
+            'action'  => $this->formatAction($r, short: false),
+            'name'    => $r['name'] ?? null,
+        ], array_values($routes))]);
+
         if (empty($routes)) {
-            echo "\n  \033[33m→\033[0m  No routes registered.\n\n";
+            $out->say('LUANY-ROUTE-004', [], 'info');
+            return;
+        }
+
+        if ($out->json) {
             return;
         }
 
@@ -93,7 +107,7 @@ class RouteListCommand extends BaseCommand
             $this->printRoute($route, $methodWidth, $uriWidth, $actionWidth, $nameWidth);
         }
 
-        echo "\n  " . count($routes) . " route(s) registered.\n\n";
+        echo "\n  " . $out->text->text('LUANY-ROUTE-005', ['count' => count($routes)]) . "\n\n";
     }
 
     private function printHeader(int $mw, int $uw, int $aw, int $nw): void
@@ -142,16 +156,16 @@ class RouteListCommand extends BaseCommand
     }
 
     /** @param array<string, mixed> $route */
-    private function formatAction(array $route): string
+    private function formatAction(array $route, bool $short = true): string
     {
         $action = $route['action'] ?? ($route['controller'] ?? '');
 
         if (is_array($action)) {
             [$class, $method] = $action;
             $class = is_string($class) ? $class : get_class($class);
-            // Strip namespace for brevity
-            $short = substr($class, strrpos($class, '\\') + 1);
-            return "{$short}@{$method}";
+            // Strip namespace for brevity in the table
+            $name = $short ? substr((string) strrchr('\\' . $class, '\\'), 1) : $class;
+            return "{$name}@{$method}";
         }
 
         if ($action instanceof \Closure || is_callable($action)) {

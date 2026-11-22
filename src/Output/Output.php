@@ -36,6 +36,9 @@ final class Output
 
     public readonly Messages $text;
 
+    /** Human mode: one line per message, without blank lines (lists of results). */
+    private bool $compact = false;
+
     public function __construct(
         public readonly string $command = '',
         public readonly bool $json = false,
@@ -74,8 +77,21 @@ final class Output
 
         if (!$this->json) {
             $icon = ['success' => "\033[32m✓\033[0m", 'info' => "\033[36m→\033[0m", 'warning' => "\033[33m⚠\033[0m", 'error' => "\033[31m✗\033[0m"][$level];
-            $line = "\n  {$icon}  {$text}\n\n";
+            $line = $this->compact ? "  {$icon}  {$text}\n" : "\n  {$icon}  {$text}\n\n";
             $level === 'error' ? fwrite(STDERR, $line) : print($line);
+        }
+    }
+
+    public function compact(bool $compact = true): void
+    {
+        $this->compact = $compact;
+    }
+
+    /** Print raw text in human mode only (tables, hints). */
+    public function line(string $text = ''): void
+    {
+        if (!$this->json) {
+            echo $text . "\n";
         }
     }
 
@@ -126,6 +142,24 @@ final class Output
 
         $this->say('LUANY-MAKE-003', ['created' => $this->text->created($kind), 'path' => $relative]);
         return true;
+    }
+
+    /**
+     * Record a change made (or, with --dry-run, planned) by the command
+     * itself: op = create | update | delete. Leave $diff null for content
+     * that must not be shown (secrets).
+     */
+    public function planned(string $op, string $relative, ?string $diff = null): void
+    {
+        $entry = ['op' => $op, 'path' => $relative, 'applied' => !$this->dryRun];
+        if ($diff !== null) {
+            $entry['diff'] = $diff;
+        }
+        $this->plan[] = $entry;
+
+        if ($this->dryRun && !$this->json) {
+            echo '  ' . "\033[36m→\033[0m  " . $this->text->text(['create' => 'LUANY-CLI-006', 'update' => 'LUANY-CLI-007'][$op] ?? 'LUANY-CLI-008', ['path' => $relative]) . "\n";
+        }
     }
 
     // ── Envelope ────────────────────────────────────────────────────────────

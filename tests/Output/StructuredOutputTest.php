@@ -109,10 +109,10 @@ class StructuredOutputTest extends TestCase
 
     public function test_commands_without_structured_output_refuse_json_and_dry_run(): void
     {
-        $r = $this->json('key:generate', 1);
+        $r = $this->json('route:cache', 1);
         $this->assertSame('LUANY-CLI-002', $r['error']['code']);
 
-        [$code, $out] = $this->luany('key:generate --dry-run');
+        [$code, $out] = $this->luany('route:cache --dry-run');
         $this->assertSame(1, $code);
         $this->assertStringContainsString('does not support --dry-run yet; nothing was done', $out);
     }
@@ -127,6 +127,55 @@ class StructuredOutputTest extends TestCase
 
         [, $out] = $this->luany('make:controller');
         $this->assertStringContainsString('Utilização: luany make:controller <ControllerName>', $out);
+    }
+
+    public function test_feature_dry_run_plans_every_file(): void
+    {
+        $r = $this->json('make:feature Post title:string --dry-run');
+
+        $this->assertCount(8, $r['plan'], 'model, controller, migration, 4 views, routes');
+        $this->assertSame('routes/posts.php', $r['plan'][7]['path']);
+        $this->assertCount(7, $r['data']['routes']);
+        $this->assertDirectoryDoesNotExist($this->project . '/app');
+    }
+
+    public function test_key_generate_dry_run_never_shows_or_writes_the_key(): void
+    {
+        file_put_contents($this->project . '/.env', "APP_KEY=\n");
+        $r = $this->json('key:generate --dry-run');
+
+        $this->assertSame([['op' => 'update', 'path' => '.env', 'applied' => false]], $r['plan']);
+        $this->assertSame("APP_KEY=\n", file_get_contents($this->project . '/.env'));
+
+        $r = $this->json('key:generate');
+        $this->assertTrue($r['plan'][0]['applied']);
+        $this->assertArrayNotHasKey('diff', $r['plan'][0]);
+        $this->assertStringNotContainsString('base64:', json_encode($r));
+        $this->assertStringContainsString('APP_KEY=base64:', file_get_contents($this->project . '/.env'));
+    }
+
+    public function test_cache_clear_dry_run_and_about_data(): void
+    {
+        mkdir($this->project . '/storage/cache/views', 0777, true);
+        touch($this->project . '/storage/cache/views/a.php');
+
+        $r = $this->json('cache:clear --dry-run');
+        $this->assertSame('delete', $r['plan'][0]['op']);
+        $this->assertFileExists($this->project . '/storage/cache/views/a.php');
+
+        $r = $this->json('about');
+        $this->assertSame(PHP_VERSION, $r['data']['versions']['php']);
+    }
+
+    public function test_view_check_reports_diagnostics(): void
+    {
+        mkdir($this->project . '/views', 0777, true);
+        file_put_contents($this->project . '/views/a.lte', "ok\n@if(\$x)");
+
+        $r = $this->json('view:check --no-app', 1);
+        $this->assertSame('LUANY-VIEW-003', $r['error']['code']);
+        $this->assertSame('views/a.lte', $r['data']['diagnostics'][0]['file']);
+        $this->assertSame(2, $r['data']['diagnostics'][0]['line']);
     }
 
     public function test_catalogs_have_the_same_codes(): void
