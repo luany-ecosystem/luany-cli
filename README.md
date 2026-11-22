@@ -433,7 +433,18 @@ luany/database ≥ 1.3 and luany/framework ≥ 1.2.
 
 ## --json, --dry-run and message codes
 
-Generators (`make:controller`, `make:model`, `make:middleware`, `make:provider`, `make:request`, `make:seeder`, `make:test`, `make:view`, `make:migration`) accept two global flags:
+These commands accept two global flags:
+
+| Command | `--dry-run` | `--json` data |
+|---|---|---|
+| `make:*` (all generators, including `make:feature`) | plan + diff of every file | `make:feature`: `model`, `table`, `fields`, `routes` |
+| `key:generate` | plans the `.env` change (never shows the key) | — |
+| `cache:clear`, `route:clear` | plans the deletions | `removed` |
+| `route:list` | — | `routes` (`methods`, `uri`, `action`, `name`) |
+| `migrate:status` | — | `migrations` (`name`, `ran`, `batch`) |
+| `view:check` | — | `views`, `diagnostics` (`file`, `line`, `column`, `message`) |
+| `about` | — | `app`, `versions` |
+
 
 ```bash
 luany make:model Post --dry-run          # show the plan and the diff, write nothing

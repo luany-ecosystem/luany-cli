@@ -3,11 +3,13 @@
 namespace LuanyCli\Commands;
 
 use LuanyCli\BaseCommand;
+use LuanyCli\Output\Output;
+use LuanyCli\Output\StructuredCommand;
 use LuanyCli\Env;
 use LuanyCli\Support\EnvException;
 use LuanyCli\Support\EnvRepository;
 
-class AboutCommand extends BaseCommand
+class AboutCommand extends BaseCommand implements StructuredCommand
 {
     public function requiresProject(): bool
     {
@@ -37,6 +39,14 @@ class AboutCommand extends BaseCommand
         $coreVersion = $this->packageVersion('luany/core');
         $lteVersion  = $this->packageVersion('luany/lte');
         $cliVersion  = $this->cliVersion();
+
+        Output::current()->data([
+            'app'      => ['name' => $appName, 'env' => $appEnv, 'debug' => $appDebug, 'url' => $appUrl],
+            'versions' => ['php' => PHP_VERSION, 'luany/framework' => $fwVersion, 'luany/core' => $coreVersion, 'luany/lte' => $lteVersion, 'luany/cli' => $cliVersion],
+        ]);
+        if (Output::current()->json) {
+            return;
+        }
 
         echo "\n";
         echo "  \033[33mLuany\033[0m — Compiler-Driven PHP MVC Framework\n";

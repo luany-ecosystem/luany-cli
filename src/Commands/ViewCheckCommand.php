@@ -3,6 +3,9 @@
 namespace LuanyCli\Commands;
 
 use LuanyCli\BaseCommand;
+use LuanyCli\Output\CommandError;
+use LuanyCli\Output\Output;
+use LuanyCli\Output\StructuredCommand;
 use LuanyCli\Env;
 
 /**
@@ -24,7 +27,7 @@ use LuanyCli\Env;
  *
  * Exit code 1 when any view has errors — suitable for CI.
  */
-class ViewCheckCommand extends BaseCommand
+class ViewCheckCommand extends BaseCommand implements StructuredCommand
 {
     public function name(): string
     {
@@ -51,21 +54,22 @@ class ViewCheckCommand extends BaseCommand
         // Resolved at runtime: the project may ship an older luany/lte.
         $engineClass = $this->engineClass();
         if (!class_exists($engineClass) || !method_exists($engineClass, 'parseView')) {
-            $this->fail('view:check needs luany/lte >= 1.2 in this project. Run: composer update luany/lte');
-            return;
+            throw new CommandError('LUANY-VIEW-001', [], 'composer update luany/lte');
         }
 
         if (!is_dir($views)) {
-            $this->fail("Views directory not found: {$options['path']}");
-            return;
+            throw new CommandError('LUANY-VIEW-002', ['path' => $options['path']]);
         }
+
+        $out = Output::current();
+        $this->diagnostics = [];
 
         $engine = $this->engine($base, $views, !$options['no-app'], $options['format'] === 'github');
         $files  = $this->viewFiles($views);
         $errors = 0;
 
         if ($options['format'] !== 'github') {
-            echo "\n  \033[33m→\033[0m  Checking " . count($files) . " view(s) in {$options['path']}/\n\n";
+            $out->line("\n  \033[33m→\033[0m  " . $out->text->text('LUANY-VIEW-004', ['count' => count($files), 'path' => $options['path']]) . "\n");
         }
 
         foreach ($files as $relative) {
@@ -80,18 +84,20 @@ class ViewCheckCommand extends BaseCommand
             }
         }
 
-        if ($options['format'] !== 'github') {
-            if ($errors === 0) {
-                echo "  \033[32m✓\033[0m  " . count($files) . " view(s) OK.\n\n";
-            } else {
-                echo "\n  \033[31m✗\033[0m  {$errors} of " . count($files) . " view(s) have errors.\n\n";
-            }
-        }
+        $out->data(['views' => count($files), 'diagnostics' => $this->diagnostics]);
 
         if ($errors > 0) {
-            $this->terminate(1);
+            // The summary is the command's error (exit 1).
+            throw new CommandError('LUANY-VIEW-003', ['errors' => $errors, 'count' => count($files)]);
+        }
+
+        if ($options['format'] !== 'github') {
+            $out->line("  \033[32m✓\033[0m  " . $out->text->text('LUANY-VIEW-005', ['count' => count($files)]) . "\n");
         }
     }
+
+    /** @var list<array{file: string, line: int, column: int, message: string}> */
+    private array $diagnostics = [];
 
     /**
      * Engine class name, checked at runtime against the project's luany/lte.
@@ -102,14 +108,6 @@ class ViewCheckCommand extends BaseCommand
     }
 
     /**
-     * Exit hook (overridden in tests).
-     */
-    protected function terminate(int $code): void
-    {
-        exit($code);
-    }
-
-    /**
      * @param array{path: string, format: string, no-app: bool} $options
      */
     private function report(array $options, string $file, ?\Luany\Lte\TemplateSyntaxException $e, ?string $fallback = null): void
@@ -117,6 +115,11 @@ class ViewCheckCommand extends BaseCommand
         $line    = $e === null ? 0 : $e->templateLine;
         $column  = $e === null ? 0 : $e->templateColumn;
         $message = $e !== null ? $this->cleanMessage($e) : (string) $fallback;
+        $this->diagnostics[] = ['file' => $file, 'line' => $line, 'column' => $column, 'message' => $message];
+
+        if (Output::current()->json) {
+            return;
+        }
 
         if ($options['format'] === 'github') {
             $props = "file={$file}" . ($line > 0 ? ",line={$line}" : '') . ($column > 0 ? ",col={$column}" : '');
@@ -279,11 +282,5 @@ class ViewCheckCommand extends BaseCommand
         }
 
         return $options;
-    }
-
-    private function fail(string $message): void
-    {
-        echo "\n  \033[31m✗\033[0m  {$message}\n\n";
-        $this->terminate(1);
     }
 }

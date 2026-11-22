@@ -3,6 +3,8 @@
 namespace LuanyCli\Tests\Commands;
 
 use LuanyCli\Commands\ViewCheckCommand;
+use LuanyCli\Output\CommandError;
+use LuanyCli\Output\Output;
 use LuanyCli\Env;
 use PHPUnit\Framework\TestCase;
 
@@ -38,23 +40,26 @@ class ViewCheckCommandTest extends TestCase
     }
 
     /**
-     * @return array{output: string, exit: ?int}
+     * @return array{output: string, exit: ?int, error: string}
      */
     private function check(array $args = ['--no-app']): array
     {
-        $command = new class extends ViewCheckCommand {
-            public ?int $exit = null;
-            protected function terminate(int $code): void { $this->exit = $code; }
-        };
+        $command = new ViewCheckCommand();
+        $exit    = null;
+        $error   = '';
 
         ob_start();
         try {
             $command->handle($args);
+        } catch (CommandError $e) {
+            // What the Application prints (to STDERR) for a failed command.
+            $exit  = $e->exitCode;
+            $error = Output::current()->text->text($e->messageCode, $e->params);
         } finally {
             $output = (string) ob_get_clean();
         }
 
-        return ['output' => $output, 'exit' => $command->exit];
+        return ['output' => $output, 'exit' => $exit, 'error' => $error];
     }
 
     public function test_metadata(): void
@@ -84,7 +89,7 @@ class ViewCheckCommandTest extends TestCase
         $this->assertStringContainsString('Unclosed @if: missing @endif.', $r['output']);
         $this->assertStringContainsString('views/pages/users/edit.lte:2:', $r['output']);
         $this->assertStringContainsString('PHP syntax error in {{ }}', $r['output']);
-        $this->assertStringContainsString('2 of 4 view(s) have errors', $r['output']);
+        $this->assertStringContainsString('2 of 4 view(s) have errors', $r['error']);
     }
 
     public function test_github_annotation_format(): void
@@ -95,7 +100,7 @@ class ViewCheckCommandTest extends TestCase
 
         $this->assertSame(1, $r['exit']);
         $this->assertStringContainsString('::error file=views/pages/users/show.lte,line=2,col=1::Unexpected @endif', $r['output']);
-        $this->assertStringNotContainsString('view(s)', $r['output']);
+        $this->assertStringNotContainsString('view(s)', $r['output'], 'stdout carries only annotations');
     }
 
     public function test_portuguese_syntax_from_env_file(): void
@@ -145,7 +150,7 @@ class ViewCheckCommandTest extends TestCase
         $r = $this->check(['--no-app', '--path=nope']);
 
         $this->assertSame(1, $r['exit']);
-        $this->assertStringContainsString('Views directory not found: nope', $r['output']);
+        $this->assertStringContainsString('Views directory not found: nope', $r['error']);
     }
     public function test_custom_path_is_checked_when_the_app_boots(): void
     {
