@@ -161,7 +161,8 @@ class ViewCheckCommand extends BaseCommand
         $compiler = $engine->getCompiler();
         // LTE >= 1.4: the engine's own parser carries the project's syntax
         // (Portuguese directive aliases); older engines build a plain one.
-        $parser = method_exists($engine, 'getParser')
+        // The project's luany/lte may be older than the CLI's (getParser: 1.4).
+        $parser = is_callable([$engine, 'getParser'])
             ? $engine->getParser()
             : new \Luany\Lte\Parser(static fn (string $name): bool => $compiler->isDirective($name));
 
@@ -204,7 +205,7 @@ class ViewCheckCommand extends BaseCommand
 
         $engine = new \Luany\Lte\Engine($views, sys_get_temp_dir() . '/luany_view_check_' . md5($views));
         $syntax = self::syntax($base);
-        if ($syntax !== 'en' && method_exists($engine, 'setSyntax')) {
+        if ($syntax !== 'en' && is_callable([$engine, 'setSyntax'])) { // luany/lte >= 1.4
             $engine->setSyntax($syntax);
         }
 
