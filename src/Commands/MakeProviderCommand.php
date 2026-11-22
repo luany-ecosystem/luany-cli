@@ -3,9 +3,11 @@
 namespace LuanyCli\Commands;
 
 use LuanyCli\BaseCommand;
-use LuanyCli\Env;
+use LuanyCli\Output\CommandError;
+use LuanyCli\Output\Output;
+use LuanyCli\Output\StructuredCommand;
 
-class MakeProviderCommand extends BaseCommand
+class MakeProviderCommand extends BaseCommand implements StructuredCommand
 {
     public function name(): string
     {
@@ -23,25 +25,11 @@ class MakeProviderCommand extends BaseCommand
         $name = $args[0] ?? null;
 
         if (!$name) {
-            fwrite(STDERR, "\n  \033[31m✗\033[0m  Usage: luany make:provider <ProviderName>\n\n");
-            exit(1);
+            throw CommandError::usage('make:provider <ProviderName>', 'make:provider Payment');
         }
 
         $name = $this->normalizeName($name, 'ServiceProvider');
-        $dir  = Env::basePath() . '/app/Providers';
-        $path = "{$dir}/{$name}.php";
-
-        if (!is_dir($dir)) {
-            mkdir($dir, 0755, true);
-        }
-
-        if (file_exists($path)) {
-            echo "\n  \033[33m⚠\033[0m  {$name} already exists.\n\n";
-            exit(0);
-        }
-
-        file_put_contents($path, $this->stub($name));
-        echo "\n  \033[32m✓\033[0m  Provider created: app/Providers/{$name}.php\n\n";
+        Output::current()->createFile("app/Providers/{$name}.php", $this->stub($name), 'provider', $name);
     }
 
     private function stub(string $name): string

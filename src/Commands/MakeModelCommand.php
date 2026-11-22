@@ -3,10 +3,12 @@
 namespace LuanyCli\Commands;
 
 use LuanyCli\BaseCommand;
-use LuanyCli\Env;
+use LuanyCli\Output\CommandError;
+use LuanyCli\Output\Output;
+use LuanyCli\Output\StructuredCommand;
 use LuanyCli\Support\NameValidator;
 
-class MakeModelCommand extends BaseCommand
+class MakeModelCommand extends BaseCommand implements StructuredCommand
 {
     public function name(): string
     {
@@ -24,26 +26,12 @@ class MakeModelCommand extends BaseCommand
         $name = $args[0] ?? null;
 
         if (!$name) {
-            fwrite(STDERR, "\n  \033[31m✗\033[0m  Usage: luany make:model <ModelName>\n\n");
-            exit(1);
+            throw CommandError::usage('make:model <ModelName>', 'make:model Post');
         }
 
         $name  = NameValidator::className($name, 'model name');
         $table = $this->toTableName($name);
-        $dir   = Env::basePath() . '/app/Models';
-        $path  = "{$dir}/{$name}.php";
-
-        if (!is_dir($dir)) {
-            mkdir($dir, 0755, true);
-        }
-
-        if (file_exists($path)) {
-            echo "\n  \033[33m⚠\033[0m  {$name} already exists.\n\n";
-            exit(0);
-        }
-
-        file_put_contents($path, $this->stub($name, $table));
-        echo "\n  \033[32m✓\033[0m  Model created: app/Models/{$name}.php\n\n";
+        Output::current()->createFile("app/Models/{$name}.php", $this->stub($name, $table), 'model', $name);
     }
 
     private function stub(string $name, string $table): string

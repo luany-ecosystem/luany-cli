@@ -3,9 +3,11 @@
 namespace LuanyCli\Commands;
 
 use LuanyCli\BaseCommand;
-use LuanyCli\Env;
+use LuanyCli\Output\CommandError;
+use LuanyCli\Output\Output;
+use LuanyCli\Output\StructuredCommand;
 
-class MakeSeederCommand extends BaseCommand
+class MakeSeederCommand extends BaseCommand implements StructuredCommand
 {
     public function name(): string
     {
@@ -23,26 +25,11 @@ class MakeSeederCommand extends BaseCommand
         $name = $args[0] ?? null;
 
         if (!$name) {
-            fwrite(STDERR, "\n  \033[31m✗\033[0m  Usage: luany make:seeder <Name>\n");
-            fwrite(STDERR, "  Example: luany make:seeder UserSeeder\n\n");
-            exit(1);
+            throw CommandError::usage('make:seeder <Name>', 'make:seeder UserSeeder');
         }
 
         $name = $this->normalizeName($name, 'Seeder');
-        $dir  = Env::basePath() . '/database/seeders';
-        $path = "{$dir}/{$name}.php";
-
-        if (!is_dir($dir)) {
-            mkdir($dir, 0755, true);
-        }
-
-        if (file_exists($path)) {
-            fwrite(STDERR, "\n  \033[31m✗\033[0m  Seeder already exists: database/seeders/{$name}.php\n\n");
-            exit(1);
-        }
-
-        file_put_contents($path, $this->stub($name));
-        echo "\n  \033[32m✓\033[0m  Seeder created: database/seeders/{$name}.php\n\n";
+        Output::current()->createFile("database/seeders/{$name}.php", $this->stub($name), 'seeder', $name, existsIsError: true);
     }
 
     private function stub(string $class): string
