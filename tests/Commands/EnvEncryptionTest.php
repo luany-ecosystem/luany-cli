@@ -127,6 +127,28 @@ class EnvEncryptionTest extends TestCase
         $this->assertStringContainsString('No changes', $out);
     }
 
+    public function test_edit_temp_files_are_private_and_editor_leftovers_are_removed(): void
+    {
+        $key = EnvironmentCipher::generateKey();
+        $this->run_(EnvEncryptCommand::class, ['--key=' . $key]);
+        $dir = null;
+        $modes = [];
+        EnvEditCommand::$editor = function (string $file) use (&$dir, &$modes): int {
+            $dir = dirname($file);
+            $modes = [fileperms($dir) & 0777, fileperms($file) & 0777];
+            file_put_contents($dir . '/.' . basename($file) . '.swp', 'SECRET');
+            file_put_contents($file . '~', 'SECRET');
+            return 1;
+        };
+
+        [$code] = $this->run_(EnvEditCommand::class, ['--key=' . $key]);
+        $this->assertSame(1, $code, 'a failing editor changes nothing');
+        if (DIRECTORY_SEPARATOR === '/') {
+            $this->assertSame([0700, 0600], $modes);
+        }
+        $this->assertDirectoryDoesNotExist((string) $dir, 'swap and backup files are removed with the directory');
+    }
+
     public function test_missing_and_wrong_keys_fail_clearly(): void
     {
         $this->run_(EnvEncryptCommand::class, []);
