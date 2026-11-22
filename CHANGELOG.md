@@ -6,6 +6,11 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [Unreleased]
+
+### Added
+- `luany view:check` follows the project's template syntax: with `syntax = pt` (LTE 1.4) the Portuguese directives (`@se`, `@paracada`, …) are validated and errors use the written names. The booted app's engine is used; with `--no-app` (or when the app cannot boot) `LUANY_SYNTAX` comes from the environment or `.env`.
+
 ## [1.9.1] — 2026-11-22
 
 ### Security

@@ -98,6 +98,19 @@ class ViewCheckCommandTest extends TestCase
         $this->assertStringNotContainsString('view(s)', $r['output']);
     }
 
+    public function test_portuguese_syntax_from_env_file(): void
+    {
+        if (!method_exists(\Luany\Lte\Engine::class, 'setSyntax')) {
+            $this->markTestSkipped('needs luany/lte 1.4');
+        }
+        file_put_contents($this->base . '/.env', "LUANY_SYNTAX=pt\n");
+        file_put_contents($this->base . '/views/pages/users/pt.lte', "@paracada(\$xs as \$x)\n{{ \$x }}\n@fimse");
+
+        $r = $this->check(['--no-app']);
+
+        $this->assertStringContainsString('Unexpected @fimse: @paracada opened on line 1 is still open (expected @fimparacada)', $r['output']);
+    }
+
     public function test_custom_path_option(): void
     {
         mkdir($this->base . '/resources/views', 0777, true);
