@@ -6,7 +6,7 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
-## [Unreleased]
+## [1.9.1] — 2026-11-22
 
 ### Security
 - `luany env:edit`: the temporary plaintext is created under a 0077 umask (no window with wider permissions, refuses a pre-existing file or symlink), and the whole temporary directory is overwritten and removed afterwards — including editor swap and backup files (`.swp`, `~`) that previously survived.
