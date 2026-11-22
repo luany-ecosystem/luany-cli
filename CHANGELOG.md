@@ -6,7 +6,7 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
-## [Unreleased]
+## [1.12.0] — 2026-11-22
 
 ### Added
 - **`--json` / `--dry-run`, part 2:** `make:feature` (plan of all 8 files, `data.routes`; never prompts under `--json`), `key:generate` (the plan never carries the key), `cache:clear`, `route:clear`, `route:list` (`data.routes`), `migrate:status` (`data.migrations`), `view:check` (`data.diagnostics` with file, line, column) and `about` (`data.app`, `data.versions`).
