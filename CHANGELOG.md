@@ -6,6 +6,16 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [Unreleased]
+
+### Added
+- **Portuguese commands** (L3b, always on): `luany criar:controlador`, `criar:modelo`, `criar:migracao`, `criar:funcionalidade`, `migrar`, `migrar:estado`, `rota:listar`, `vista:verificar`, `chave:gerar`, `env:cifrar`, `diagnostico`, `sobre`, `atualizar`… (30 aliases; the English names keep working). With `LUANY_DEV_LANGUAGE=pt`, `luany list` shows the Portuguese name, the English one and a Portuguese description.
+- **Portuguese field types** for `make:feature`: `nome:texto`, `bio:texto_longo?`, `idade:inteiro`, `ativo:booleano`, `nascido:data`, `inicio:data_hora`, `papel_id:estrangeira`.
+- **Portuguese generators**: with `LUANY_SYNTAX=pt` the generated views use the Portuguese directives (`@estende`, `@secao`, `@listar`…) and Portuguese texts; when `luany/pt` is also installed, the PHP is Portuguese too — `Modelo` with `$tabela`/`$preenchiveis`/`$conversoes` and `pertenceA()`, `ProdutoControlador` with `vista()`/`validar()`/`redirecionar()` and rules `obrigatorio|texto`, migrations with `Esquema`/`Tabela` (`texto`, `textoLongo`, `chaveEstrangeira()->restrita()`), routes with `Rota::recurso()`, and Portuguese plurals for tables (`autores`, `papeis`, `cancoes`). Applies to `make:feature`, `make:model`, `make:controller`, `make:migration` and `make:view`.
+
+### Changed
+- Requires luany/lte 1.4 (directive table used by the Portuguese generators).
+
 ## [1.12.0] — 2026-11-22
 
 ### Added

@@ -4,6 +4,8 @@ namespace LuanyCli\Commands;
 
 use LuanyCli\BaseCommand;
 use LuanyCli\CommandRegistry;
+use LuanyCli\Output\Output;
+use LuanyCli\Support\Portuguese;
 
 class ListCommand extends BaseCommand
 {
@@ -27,18 +29,30 @@ class ListCommand extends BaseCommand
     /** @param array<int, string> $args */
     public function handle(array $args): void
     {
-        echo "\n  \033[32mUsage:\033[0m   luany <command> [arguments]\n\n";
-        echo "  \033[32mCommands:\033[0m\n";
-
+        $text     = Output::current()->text;
+        $pt       = $text->language === 'pt';
         $commands = $this->registry->all();
-        $maxLen   = max(array_map(fn($c) => strlen($c->name()), $commands));
 
+        echo "\n  \033[32m" . $text->text('LUANY-CLI-009') . "\033[0m   luany <" . $text->text('LUANY-CLI-011') . '> [' . $text->text('LUANY-CLI-012') . "]\n\n";
+        echo "  \033[32m" . $text->text('LUANY-CLI-010') . "\033[0m\n";
+
+        $rows = [];
         foreach ($commands as $command) {
-            printf(
-                "    \033[36m%-{$maxLen}s\033[0m   %s\n",
-                $command->name(),
-                $command->description()
-            );
+            $alias = $pt ? Portuguese::commandAlias($command->name()) : null;
+            $description = $pt ? $text->text('cmd.' . $command->name()) : $command->description();
+            if ($description === 'cmd.' . $command->name()) {
+                $description = $command->description();
+            }
+            $rows[] = [$alias ?? $command->name(), $alias !== null ? $command->name() : '', $description];
+        }
+
+        $nameWidth  = max(array_map(fn (array $r): int => mb_strlen($r[0]), $rows));
+        $aliasWidth = max(array_map(fn (array $r): int => mb_strlen($r[1]), $rows));
+
+        foreach ($rows as [$name, $english, $description]) {
+            echo "    \033[36m" . str_pad($name, $nameWidth) . "\033[0m   "
+                . ($pt ? "\033[2m" . str_pad($english, $aliasWidth) . "\033[0m   " : '')
+                . $description . "\n";
         }
 
         echo "\n";

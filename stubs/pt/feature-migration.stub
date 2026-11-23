@@ -1,0 +1,21 @@
+<?php
+
+use Luany\Database\Migration\Migration;
+use Luany\Pt\Esquema;
+use Luany\Pt\Tabela;
+
+return new class extends Migration
+{
+    public function up(\PDO $pdo): void
+    {
+        Esquema::para($pdo)->criar('{{table}}', function (Tabela $t) {
+            $t->id();
+{{schema_columns}}            $t->marcasTempo();
+        });
+    }
+
+    public function down(\PDO $pdo): void
+    {
+        Esquema::para($pdo)->apagarSeExistir('{{table}}');
+    }
+};

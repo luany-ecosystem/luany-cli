@@ -180,7 +180,11 @@ class StructuredOutputTest extends TestCase
 
     public function test_catalogs_have_the_same_codes(): void
     {
-        $this->assertSame(array_keys(Messages::catalog('en')), array_keys(Messages::catalog('pt')));
+        $codes = fn (string $lang): array => array_values(array_filter(
+            array_keys(Messages::catalog($lang)),
+            fn (string $k): bool => str_starts_with($k, 'LUANY-') || str_starts_with($k, 'kind.')
+        ));
+        $this->assertSame($codes('en'), $codes('pt'));
     }
 
     public function test_new_file_diff_format(): void

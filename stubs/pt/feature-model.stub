@@ -1,0 +1,19 @@
+<?php
+
+namespace App\Models;
+
+{{model_imports}}use Luany\Pt\Modelo;
+
+class {{Model}} extends Modelo
+{
+    protected string $tabela = '{{table}}';
+
+    /** created_at / updated_at são preenchidos pelo modelo. */
+    protected ?bool $datasAutomaticas = true;
+
+    protected array $preenchiveis = [
+{{fillable}}
+    ];
+
+    protected array $ocultos = [];
+{{casts}}{{relations}}}
