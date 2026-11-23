@@ -12,9 +12,17 @@ class CommandRegistry
         $this->commands[$command->name()] = $command;
     }
 
+    /** @var array<string, string> alias => command name */
+    private array $aliases = [];
+
+    public function alias(string $alias, string $name): void
+    {
+        $this->aliases[$alias] = $name;
+    }
+
     public function get(string $name): ?CommandInterface
     {
-        return $this->commands[$name] ?? null;
+        return $this->commands[$name] ?? $this->commands[$this->aliases[$name] ?? ''] ?? null;
     }
 
     /** @return array<string, CommandInterface> */

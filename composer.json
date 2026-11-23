@@ -25,7 +25,7 @@
         "phpunit/phpunit": "^11.0",
         "phpstan/phpstan": "^2.1",
         "luany/framework": "^1.6",
-        "luany/lte": "^1.2"
+        "luany/lte": "^1.4"
     },
     "autoload-dev": {
         "psr-4": {

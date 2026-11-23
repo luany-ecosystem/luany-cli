@@ -3,6 +3,8 @@
 namespace LuanyCli\Commands;
 
 use LuanyCli\BaseCommand;
+use LuanyCli\Env;
+use LuanyCli\Support\Portuguese;
 use LuanyCli\Output\CommandError;
 use LuanyCli\Output\Output;
 use LuanyCli\Output\StructuredCommand;
@@ -36,6 +38,15 @@ class MakeViewCommand extends BaseCommand implements StructuredCommand
             'layout'    => $this->layoutStub(),
             default     => $this->pageStub(),
         };
+
+        if (Portuguese::mode(Env::basePath())['views']) {
+            $stub = Portuguese::directives(strtr($stub, [
+                "'Page Title'"         => "'Título da página'",
+                '<h1>Page Title</h1>'  => '<h1>Título da página</h1>',
+                '// Page-level JS'     => '// JS da página',
+                '{{-- component HTML --}}' => '{{-- HTML do componente --}}',
+            ]));
+        }
 
         Output::current()->createFile('views/' . $relativePath, $stub, 'view', "[{$name}]");
     }

@@ -12,6 +12,7 @@ use LuanyCli\Support\FieldParser;
 use LuanyCli\Support\InvalidNameException;
 use LuanyCli\Support\MigrationFinder;
 use LuanyCli\Support\NameValidator;
+use LuanyCli\Support\Portuguese;
 use LuanyCli\Support\StubRenderer;
 
 class MakeFeatureCommand extends BaseCommand implements StructuredCommand
@@ -37,8 +38,25 @@ class MakeFeatureCommand extends BaseCommand implements StructuredCommand
 
         $out = Output::current();
 
+        // LUANY_SYNTAX=pt → Portuguese views; + luany/pt → Portuguese PHP too.
+        $this->pt = Portuguese::mode(Env::basePath());
+        FieldParser::$portuguese = $this->pt['code'];
+
+        try {
+            $this->generate($out, $name, $args);
+        } finally {
+            FieldParser::$portuguese = false;
+        }
+    }
+
+    /** @var array{views: bool, code: bool} */
+    private array $pt = ['views' => false, 'code' => false];
+
+    /** @param array<int, string> $args */
+    private function generate(Output $out, string $name, array $args): void
+    {
         $model  = NameValidator::className($name, 'feature name');
-        $models = $this->pluralize($model);
+        $models = $this->pt['code'] ? Portuguese::plural($model) : $this->pluralize($model);
         $words  = (string) preg_replace('/(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])/', '_', $models);
         $table  = strtolower($words);                    // BlogPosts → blog_posts
         $slug   = str_replace('_', '-', $table);         // BlogPosts → blog-posts (URL, views, routes file)
@@ -94,7 +112,23 @@ class MakeFeatureCommand extends BaseCommand implements StructuredCommand
             'edit_fields'       => FieldParser::toEditFields($fields, $item),
             'validation_rules'  => FieldParser::toValidationRules($fields, $table),
             'validation_rules_update' => FieldParser::toValidationRules($fields, $table, true),
+            'Controller'        => $this->pt['code'] ? 'Controlador' : 'Controller',
         ];
+
+        if ($this->pt['code']) {
+            foreach (['casts', 'relations'] as $key) {
+                $variables[$key] = Portuguese::model($variables[$key]);
+            }
+            $variables['schema_columns'] = Portuguese::schemaColumns($variables['schema_columns']);
+            foreach (['validation_rules', 'validation_rules_update'] as $key) {
+                $variables[$key] = Portuguese::rules($variables[$key]);
+            }
+        }
+        if ($this->pt['views']) {
+            foreach (['form_fields', 'edit_fields', 'show_fields'] as $key) {
+                $variables[$key] = Portuguese::viewFields($variables[$key]);
+            }
+        }
 
         $out->line();
         $out->say('LUANY-MAKE-006', ['name' => $model], 'info');
@@ -110,7 +144,7 @@ class MakeFeatureCommand extends BaseCommand implements StructuredCommand
 
         $out->compact(false);
         $out->line();
-        $out->data(['model' => $model, 'table' => $table, 'fields' => $fields]);
+        $out->data(['model' => $model, 'table' => $table, 'fields' => $fields, 'portuguese' => $this->pt]);
     }
 
     /**
@@ -144,17 +178,17 @@ class MakeFeatureCommand extends BaseCommand implements StructuredCommand
             unlink($gitkeep);
         }
 
-        $out->createFile("app/Models/{$v['Model']}.php", self::render($r, "{$stubs}/feature-model.stub", $v), 'model', $v['Model']);
+        $out->createFile("app/Models/{$v['Model']}.php", self::render($r, $this->stub($stubs, 'feature-model.stub', 'code'), $v), 'model', $v['Model']);
     }
 
     /** @param array<string, string> $v */
     private function generateController(StubRenderer $r, string $base, string $stubs, array $v): void
     {
         Output::current()->createFile(
-            "app/Controllers/{$v['Model']}Controller.php",
-            self::render($r, "{$stubs}/feature-controller.stub", $v),
+            "app/Controllers/{$v['Model']}{$v['Controller']}.php",
+            self::render($r, $this->stub($stubs, 'feature-controller.stub', 'code'), $v),
             'controller',
-            "{$v['Model']}Controller"
+            "{$v['Model']}{$v['Controller']}"
         );
     }
 
@@ -171,27 +205,35 @@ class MakeFeatureCommand extends BaseCommand implements StructuredCommand
         }
 
         $file = date('Y_m_d_His') . "_{$name}.php";
-        Output::current()->createFile("database/migrations/{$file}", self::render($r, "{$stubs}/feature-migration.stub", $v), 'migration', $file);
+        Output::current()->createFile("database/migrations/{$file}", self::render($r, $this->stub($stubs, 'feature-migration.stub', 'code'), $v), 'migration', $file);
     }
 
     /** @param array<string, string> $v */
     private function generateViews(StubRenderer $r, string $base, string $stubs, array $v): void
     {
         foreach (['index' => 'feature-view-index.stub', 'show' => 'feature-view-show.stub', 'create' => 'feature-view-create.stub', 'edit' => 'feature-view-edit.stub'] as $view => $stub) {
-            Output::current()->createFile("views/pages/{$v['slug']}/{$view}.lte", self::render($r, "{$stubs}/{$stub}", $v), 'view', "[{$view}]");
+            Output::current()->createFile("views/pages/{$v['slug']}/{$view}.lte", self::render($r, $this->stub($stubs, $stub, 'views'), $v), 'view', "[{$view}]");
         }
     }
 
     /** @param array<string, string> $v */
     private function appendRoutes(string $base, array $v): void
     {
+        $route  = $this->pt['code'] ? ['Luany\\Pt\\Rota', 'Rota::recurso'] : ['Luany\\Core\\Routing\\Route', 'Route::resource'];
+        $class  = $v['Model'] . $v['Controller'];
         $block  = "<?php\n\n";
-        $block .= "use Luany\\Core\\Routing\\Route;\n";
-        $block .= "use App\\Controllers\\{$v['Model']}Controller;\n\n";
+        $block .= "use {$route[0]};\n";
+        $block .= "use App\\Controllers\\{$class};\n\n";
         $block .= "// ── {$v['Models']} " . str_repeat('─', 67) . "\n";
-        $block .= "Route::resource('{$v['slug']}', {$v['Model']}Controller::class);\n";
+        $block .= "{$route[1]}('{$v['slug']}', {$class}::class);\n";
 
         Output::current()->createFile("routes/{$v['slug']}.php", $block, 'routes', "routes/{$v['slug']}.php");
+    }
+
+    /** Portuguese stub (stubs/pt) when the project writes that part in Portuguese. */
+    private function stub(string $stubs, string $file, string $part): string
+    {
+        return $this->pt[$part] ? "{$stubs}/pt/{$file}" : "{$stubs}/{$file}";
     }
 
     /** @param array<string, string> $v */
@@ -279,7 +321,8 @@ class MakeFeatureCommand extends BaseCommand implements StructuredCommand
 
         [$name, $type] = str_contains($entry, ':') ? explode(':', $entry, 2) : [$entry, ''];
 
-        return [trim($name), strtolower(trim($type)), $nullable];
+        // Portuguese type names are accepted: nome:texto, preco:decimal, ativo:booleano.
+        return [trim($name), Portuguese::fieldType(strtolower(trim($type))), $nullable];
     }
 
     /**

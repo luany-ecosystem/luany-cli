@@ -193,5 +193,10 @@ class Application
         $registry->register(new DoctorCommand());
         $registry->register(new SelfUpdateCommand());
         $registry->register(new MakeFeatureCommand());
+
+        // "Luany em Português": luany criar:controlador, luany migrar, … (always on).
+        foreach (\LuanyCli\Support\Portuguese::COMMANDS as $alias => $name) {
+            $registry->alias($alias, $name);
+        }
     }
 }

@@ -431,6 +431,22 @@ Generated models set `$timestamps = true` (the model writes `created_at` /
 `updated_at`). Views format dates and show booleans as Yes/No. Requires
 luany/database ≥ 1.3 and luany/framework ≥ 1.2.
 
+## Luany em Português
+
+Every command has a Portuguese name (`luany criar:controlador`, `luany migrar`, `luany rota:listar`…); the English names keep working. With `LUANY_DEV_LANGUAGE=pt`, messages and `luany list` are in Portuguese.
+
+With `LUANY_SYNTAX=pt` the generators write Portuguese views; with `luany/pt` installed too, the PHP is Portuguese:
+
+```bash
+luany criar:funcionalidade Autor nome:texto bio:texto_longo? ativo:booleano papel_id:estrangeira
+# app/Models/Autor.php            class Autor extends Modelo, $tabela = 'autores'
+# app/Controllers/AutorControlador.php   validar(…, ['nome' => ['obrigatorio', 'texto', 'max:255']])
+# database/migrations/…_create_autores_table.php   $t->chaveEstrangeira('papel_id')->restrita('papeis')
+# routes/autores.php              Rota::recurso('autores', AutorControlador::class)
+```
+
+---
+
 ## --json, --dry-run and message codes
 
 These commands accept two global flags:

@@ -3,6 +3,8 @@
 namespace LuanyCli\Commands;
 
 use LuanyCli\BaseCommand;
+use LuanyCli\Env;
+use LuanyCli\Support\Portuguese;
 use LuanyCli\Output\CommandError;
 use LuanyCli\Output\Output;
 use LuanyCli\Output\StructuredCommand;
@@ -29,12 +31,22 @@ class MakeControllerCommand extends BaseCommand implements StructuredCommand
         }
 
         // Support subdirectory paths: Auth/Login → app/Controllers/Auth/LoginController.php
-        ['subPath' => $subPath, 'className' => $className] = $this->normalizeClassPath($name, 'Controller');
+        // LUANY_SYNTAX=pt + luany/pt → ProdutoControlador with Portuguese helpers.
+        $pt = Portuguese::mode(Env::basePath())['code'];
+        ['subPath' => $subPath, 'className' => $className] = $this->normalizeClassPath($name, $pt ? 'Controlador' : 'Controller');
 
         $namespace = 'App\\Controllers' . ($subPath ? '\\' . str_replace('/', '\\', $subPath) : '');
         $relative  = 'app/Controllers/' . ($subPath ? $subPath . '/' : '') . "{$className}.php";
 
-        Output::current()->createFile($relative, $this->stub($className, $namespace), 'controller', $className);
+        $stub = $this->stub($className, $namespace);
+        if ($pt) {
+            $stub = strtr($stub, [
+                'Request $request'           => 'Request $requisicao',
+                "return view('pages.home');" => "return vista('pages.home');",
+            ]);
+        }
+
+        Output::current()->createFile($relative, $stub, 'controller', $className);
     }
 
     private function stub(string $name, string $namespace): string

@@ -55,4 +55,10 @@ return [
     'kind.view.created'       => 'View created',
     'kind.routes.created'     => 'Routes created',
     'kind.migration.created'  => 'Migration created',
+
+    // Command descriptions come from each command's description().
+    'LUANY-CLI-009' => 'Usage:',
+    'LUANY-CLI-010' => 'Commands:',
+    'LUANY-CLI-011' => 'command',
+    'LUANY-CLI-012' => 'arguments',
 ];

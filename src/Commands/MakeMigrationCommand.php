@@ -3,6 +3,7 @@
 namespace LuanyCli\Commands;
 
 use LuanyCli\BaseCommand;
+use LuanyCli\Support\Portuguese;
 use LuanyCli\Output\CommandError;
 use LuanyCli\Output\Output;
 use LuanyCli\Output\StructuredCommand;
@@ -66,6 +67,11 @@ class MakeMigrationCommand extends BaseCommand implements StructuredCommand
     {
         $name = $this->currentName;
 
+        // LUANY_SYNTAX=pt + luany/pt → Esquema / Tabela.
+        if (Portuguese::mode(Env::basePath())['code']) {
+            return $this->portugueseStub($name);
+        }
+
         if (preg_match('/^create_(.+)_table$/', $name, $m) === 1) {
             return $this->render(
                 "        \$this->schema(\$pdo)->create('{$m[1]}', function (Blueprint \$table) {\n"
@@ -88,6 +94,30 @@ class MakeMigrationCommand extends BaseCommand implements StructuredCommand
         }
 
         return $this->render('        //', '        //');
+    }
+
+    private function portugueseStub(string $name): string
+    {
+        [$up, $down] = match (true) {
+            preg_match('/^create_(.+)_table$/', $name, $m) === 1 => [
+                "        Esquema::para(\$pdo)->criar('{$m[1]}', function (Tabela \$t) {\n"
+                . "            \$t->id();\n"
+                . "            \$t->marcasTempo();\n"
+                . "        });",
+                "        Esquema::para(\$pdo)->apagarSeExistir('{$m[1]}');",
+            ],
+            preg_match('/_(?:to|from|in|on)_(.+)_table$/', $name, $m) === 1 => [
+                "        Esquema::para(\$pdo)->alterar('{$m[1]}', function (Tabela \$t) {\n            //\n        });",
+                "        Esquema::para(\$pdo)->alterar('{$m[1]}', function (Tabela \$t) {\n            //\n        });",
+            ],
+            default => ['        //', '        //'],
+        };
+
+        return str_replace(
+            "use Luany\\Database\\Schema\\Blueprint;",
+            "use Luany\\Pt\\Esquema;\nuse Luany\\Pt\\Tabela;",
+            $this->render($up, $down)
+        );
     }
 
     private function render(string $up, string $down): string

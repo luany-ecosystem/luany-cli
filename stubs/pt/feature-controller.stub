@@ -1,0 +1,72 @@
+<?php
+
+namespace App\Controllers;
+
+use App\Models\{{Model}};
+use Luany\Core\Http\Request;
+use Luany\Core\Http\Response;
+
+class {{Model}}Controlador extends Controller
+{
+    public function index(Request $requisicao): string
+    {
+        ${{items}} = {{Model}}::todos();
+
+        return vista('pages.{{slug}}.index', compact('{{items}}'));
+    }
+
+    public function show(Request $requisicao, int $id): string
+    {
+        ${{item}} = {{Model}}::encontrar($id) ?? abortar(404);
+
+        return vista('pages.{{slug}}.show', compact('{{item}}'));
+    }
+
+    public function create(Request $requisicao): string
+    {
+        return vista('pages.{{slug}}.create');
+    }
+
+    public function store(Request $requisicao): Response
+    {
+        $dados = validar($requisicao->body(), [
+{{validation_rules}}
+        ], '/{{slug}}/create');
+
+        {{Model}}::criar($dados);
+        flash('success', '{{Model}} criado com sucesso.');
+
+        return redirecionar('/{{slug}}');
+    }
+
+    public function edit(Request $requisicao, int $id): string
+    {
+        ${{item}} = {{Model}}::encontrar($id) ?? abortar(404);
+
+        return vista('pages.{{slug}}.edit', compact('{{item}}'));
+    }
+
+    public function update(Request $requisicao, int $id): Response
+    {
+        ${{item}} = {{Model}}::encontrar($id) ?? abortar(404);
+
+        $dados = validar($requisicao->body(), [
+{{validation_rules_update}}
+        ], '/{{slug}}/' . $id . '/edit');
+
+        ${{item}}->atualizar($dados);
+        flash('success', '{{Model}} atualizado com sucesso.');
+
+        return redirecionar('/{{slug}}/' . $id);
+    }
+
+    public function destroy(Request $requisicao, int $id): Response
+    {
+        ${{item}} = {{Model}}::encontrar($id) ?? abortar(404);
+
+        ${{item}}->apagar();
+        flash('success', '{{Model}} apagado com sucesso.');
+
+        return redirecionar('/{{slug}}');
+    }
+}

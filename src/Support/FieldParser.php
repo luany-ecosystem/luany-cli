@@ -115,8 +115,13 @@ class FieldParser
      */
     public static function referencedTable(string $field): string
     {
-        return self::pluralize(preg_replace('/_id$/', '', $field) ?? $field);
+        $base = preg_replace('/_id$/', '', $field) ?? $field;
+
+        return self::$portuguese ? Portuguese::plural($base) : self::pluralize($base);
     }
+
+    /** Portuguese table names (categoria_id → categorias, autor_id → autores). */
+    public static bool $portuguese = false;
 
     /**
      * Foreign fields whose referenced table has no migration yet.
