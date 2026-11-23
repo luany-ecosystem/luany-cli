@@ -6,7 +6,7 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
-## [Unreleased]
+## [1.13.0] — 2026-11-23
 
 ### Added
 - **Portuguese commands** (L3b, always on): `luany criar:controlador`, `criar:modelo`, `criar:migracao`, `criar:funcionalidade`, `migrar`, `migrar:estado`, `rota:listar`, `vista:verificar`, `chave:gerar`, `env:cifrar`, `diagnostico`, `sobre`, `atualizar`… (30 aliases; the English names keep working). With `LUANY_DEV_LANGUAGE=pt`, `luany list` shows the Portuguese name, the English one and a Portuguese description.
